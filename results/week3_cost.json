@@ -33,12 +33,12 @@
     },
     {
       "model": "claude-haiku-5-5",
-      "tokens_in": 45.37,
-      "tokens_out": 60,
-      "measured": false,
-      "llm_only_per_1m": 34.537,
-      "hybrid_cold_per_1m": 7.446223198723854,
-      "hybrid_warm_per_1m": 4.794054203700713
+      "tokens_in": 102.6275,
+      "tokens_out": 31.37,
+      "measured": true,
+      "llm_only_per_1m": 25.94775,
+      "hybrid_cold_per_1m": 5.595330943419567,
+      "hybrid_warm_per_1m": 3.6027485523429914
     }
   ]
 }

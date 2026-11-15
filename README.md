@@ -12,7 +12,7 @@ build budgeting, underwriting, or fraud features on top. Ledgerlens is a
 classic-ML pipeline (normalizer → merchant resolver → stacked category model →
 recurring detector), with an LLM planned only as a fallback for low-confidence cases.
 
-**Status:** Weeks 1–3 of 5 are done (the measured LLM-fallback accuracy is pending a paid API run).
+**Status:** Weeks 1–3 of 5 are done.
 
 | on merchants never seen in training | rules baseline | Ledgerlens |
 |---|---|---|
@@ -21,7 +21,8 @@ recurring detector), with an LLM planned only as a fallback for low-confidence c
 | accuracy, leak-free slice ([why](#leakage-check)) | 42.8% | **76.0%** |
 | merchant name exactly right (known chains) | 49.2% | **94.1%** |
 | throughput (4 workers, M1 laptop) | – | **11.5K txns/s**, p95 38 ms per 100-txn batch |
-| serving cost per 1M txns (model only) | – | **≈ $0.004** vs ≈ $1,400 for an LLM-only pipeline |
+| hybrid with Claude Haiku 5.5 fallback (400 unseen txns) | – | **92.0%**, matching Haiku-only (91.5%) at ¼ of the LLM cost |
+| serving cost per 1M txns | – | ≈ $0.004 model only · **$6 hybrid** · $26 Haiku-only (measured tokens) |
 
 Synthetic data, mean of 3 seeds. Real hand-labeled numbers: [in progress](#labeling-real-data).
 
@@ -227,25 +228,45 @@ never reaches the LLM. Better calibration, or routing on "merchant not in direct
 - A merchant found in the directory is never overwritten by the LLM's name.
 - Defaults to `claude-opus-5-5`; any model in `PRICES` can be passed (`LEDGERLENS_LLM_MODEL`, `--model`).
 
+### Measured: model vs LLM vs hybrid ([report](results/week3_llm_claude-haiku-5-5.md))
+
+400 unique test descriptions (cold directory, unseen merchants), Claude Haiku 5.5, 25 txns per request:
+
+| strategy | category acc (95% CI) | merchant exact | LLM calls | latency |
+|---|---|---|---|---|
+| Ledgerlens model only | 76.5% [72.1–80.4] | 40.5% | 0 | ~13 ms |
+| Haiku only | 91.5% [88.4–93.9] | **83.8%** | every txn | ~3.3 s per 25-txn request |
+| **hybrid** (Haiku on the 130 txns below 0.8) | **92.0%** [88.9–94.3] | 53.8% | 33% of this sample | 13 ms for the rest |
+
+0 refusals and 0 unparseable responses across 22 requests. The run cost $0.015.
+(Unique descriptions over-weight hard, rare rows, which is why model-only reads 76.5% here vs 81.6% on all traffic.)
+
+**What this says, plainly:**
+- **An off-the-shelf small LLM beats my model by 15 points** on merchants it has never seen. Part of that is world
+  knowledge: it already knows what "SWEETGRN" is, and the synthetic chains are real brands.
+- **The hybrid ties Haiku-only on category** (92.0% vs 91.5%, well within the CI) while sending only the
+  low-confidence third of this sample, about 21.5% of real traffic, to the LLM. So the model's job is to be the cheap, 13 ms
+  path for the easy majority and to *know when it's unsure*.
+- **The hybrid leaves merchant names on the table** (53.8% vs 83.8%). It only takes the LLM's merchant name on
+  routed rows, but most unseen chains are routed-out confident rows whose category is right and whose name isn't.
+  Next fix: also route rows whose merchant isn't in the directory, then re-run this eval.
+
 ### Cost per 1M transactions ([cost report](results/week3_cost.md))
 
 | | per 1M txns |
 |---|---|
 | Ledgerlens model only (measured throughput, assumes $0.04/vCPU-hour) | **≈ $0.004** |
-| hybrid, Opus 5.5 fallback on 21.5% of traffic | ≈ $298 (est.) |
-| hybrid, Haiku 5.5 fallback | ≈ $7 (est.) |
-| LLM only, Opus 5.5 | ≈ $1,381 (est.) |
-| LLM only, Haiku 5.5 | ≈ $35 (est.) |
+| hybrid, Haiku 5.5 on 21.5% of traffic (measured tokens: 103 in / 31 out per txn) | **≈ $6** |
+| Haiku 5.5 only (measured) | ≈ $26 |
+| hybrid / LLM-only, Opus 5.5 | ≈ $298 / $1,381 (est.) |
 
-(est.) = token counts estimated before any API call (pessimistic output). The measured version needs:
+(est.) = token counts estimated before any API call. Re-run with a different model:
 
 ```bash
-.venv/bin/python -m ledgerlens.llm_eval                    # dry run: plan + cost estimate, no API calls
-.venv/bin/python -m ledgerlens.llm_eval --yes              # ~$0.73 on Opus 5.5 for 400 txns; ~$0.02 on Haiku 5.5
-.venv/bin/python -m ledgerlens.cost                        # re-prices with measured tokens
+.venv/bin/python -m ledgerlens.llm_eval                                      # dry run: plan + cost estimate
+.venv/bin/python -m ledgerlens.llm_eval --yes --model claude-haiku-5-5       # ~$0.02 for 400 txns
+.venv/bin/python -m ledgerlens.cost                                          # re-prices with measured tokens
 ```
-
-That run also answers the question that matters: **does the hybrid beat both model-only and LLM-only on accuracy?**
 
 ## Labeling real data
 
@@ -265,7 +286,7 @@ This is the number founders will ask about.
 
 - [x] **Week 1**: synthetic generator, normalizer, rules baseline, eval harness, labeling tool
 - [x] **Week 2**: merchant resolver, stacked TF-IDF + LightGBM category model, ablations, leakage audit
-- [x] **Week 3**: FastAPI serving, locust load test, confidence routing, LLM fallback, cost per 1M transactions
-  - [ ] measured LLM-only / hybrid accuracy (`llm_eval --yes`, needs API credentials, ~$0.02–0.73)
+- [x] **Week 3**: FastAPI serving, locust load test, confidence routing, LLM fallback (measured on Haiku 5.5), cost per 1M transactions
+  - [ ] route "merchant not in directory" rows to the LLM too, to close the merchant-name gap
 - [ ] **Week 4**: Next.js dashboard + Claude tool-calling finance agent with eval set
 - [ ] **Week 5**: deploy, writeup, demo video

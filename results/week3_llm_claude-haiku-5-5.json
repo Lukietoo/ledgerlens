@@ -1,0 +1,53 @@
+{
+  "model": "claude-haiku-5-5",
+  "regime": "cold",
+  "n": 400,
+  "threshold": 0.8,
+  "routed": 130,
+  "batch_size": 25,
+  "model_only": {
+    "accuracy": 0.765,
+    "merchant_exact": 0.405
+  },
+  "llm_only": {
+    "accuracy": 0.915,
+    "merchant_exact": 0.8375,
+    "unparsed_or_refused": 0,
+    "usage": {
+      "requests": 16,
+      "input_tokens": 41051,
+      "output_tokens": 12548,
+      "refusals": 0,
+      "seconds": 52.29,
+      "cost_usd": 0.0104,
+      "by_model": {
+        "claude-haiku-5-5": [
+          41051,
+          12548
+        ]
+      }
+    }
+  },
+  "hybrid": {
+    "accuracy": 0.92,
+    "merchant_exact": 0.5375,
+    "usage": {
+      "requests": 6,
+      "input_tokens": 15895,
+      "output_tokens": 5727,
+      "refusals": 0,
+      "seconds": 22.29,
+      "cost_usd": 0.0045,
+      "by_model": {
+        "claude-haiku-5-5": [
+          15895,
+          5727
+        ]
+      }
+    }
+  },
+  "tokens_per_txn": {
+    "input": 102.6275,
+    "output": 31.37
+  }
+}
