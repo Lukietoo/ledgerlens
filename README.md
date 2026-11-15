@@ -21,6 +21,7 @@ recurring detector), with an LLM planned only as a fallback for low-confidence c
 | accuracy, leak-free slice ([why](#leakage-check)) | 42.8% | **75.8%** |
 | merchant name exactly right (known chains) | 50.1% | **94.1%** |
 | throughput (4 workers, M1 laptop) | – | **11.5K txns/s**, p95 38 ms per 100-txn batch |
+| bank statement formats never seen in training | – | **78.6%** category (vs 78.2% on seen formats) |
 | hybrid with Claude Haiku 5.5 fallback (400 unseen txns) | – | **91.2% category / 82.2% merchant**, matching Haiku-only (91.5% / 83.8%) |
 | serving cost per 1M txns | – | ≈ $0.004 model only · **≈ $0.59–1.15 hybrid** (cached) · $26 Haiku-only |
 
@@ -77,6 +78,8 @@ curl -s localhost:8000/v1/enrich -H 'content-type: application/json' -d '{"trans
 | `ledgerlens/agent.py` | Claude finance agent: tool loop, trace, guardrails |
 | `ledgerlens/guards.py` | public-deploy guards: per-client rate limits, daily LLM spend cap |
 | `scripts/fetch_model.py` | download + SHA-256-verify the model for deploys (or train) |
+| `ledgerlens/format_eval.py` | leave-one-bank-format-out evaluation (unseen statement formats) |
+| `ledgerlens/boilerplate.py` | learns a bank's wrapper words from one statement, no labels |
 | `ledgerlens/agent_eval.py` | 42-question agent eval with independent ground truth (97.6% on Haiku 5.5) |
 | `web/` | Next.js dashboard: decode hero, spending chart, transaction feed, recurring, chat |
 | `ledgerlens/evaluate.py` | metrics on synthetic test split and/or real labeled set |
@@ -390,6 +393,42 @@ Steps:
 
 Free Render services sleep when idle; the first request after a nap takes about 30–60 s.
 
+## Unseen bank formats
+
+Synthetic data's obvious weakness is "it only works on the formats you generated." So the test holds out entire
+*banks*: for each of the 7 card-statement formats and 4 ACH formats, [format_eval.py](ledgerlens/format_eval.py)
+retrains the full model with every user of that format removed, then scores those users' transactions
+([full report](results/week5_formats.md)).
+
+The catch: the normalizer has a hand-written rule for each format (strip `PURCHASE AUTHORIZED ON …`), so a held-out
+format isn't really unseen. Each format is therefore scored twice: with its rule on (**the model never saw it**) and
+with its rule switched off (**nobody saw it**, as if a new bank showed up tomorrow).
+
+| card formats, row-weighted | category (unseen merchants) | merchant name (known merchants) |
+|---|---|---|
+| control: users whose format the model trained on | 78.2% | 82.5% |
+| **model never saw the format** | **78.6%** | **82.5%** |
+| nobody saw it: format rule switched off | 75.7% | 28.9% |
+| **nobody saw it + boilerplate learned from the statement** | **77.1%** | **80.9%** |
+
+- **The ML model generalizes to new statement formats:** no measurable loss.
+- **The hand-written cleanup was the fragile part.** Without its rule, the bank's wrapper text stays in the merchant
+  name, and merchant accuracy collapses to 29%.
+- **So I replaced the need for the rule.** [boilerplate.py](ledgerlens/boilerplate.py) learns a bank's wrapper words
+  from the statement itself, with no labels and no format knowledge. A bank's boilerplate appears across many
+  *different* merchants (`PURCHASE`, `CHECKCARD`, `POS DEBIT`, the home city, the account holder's name), while a real
+  merchant word repeats only within its own few store variants, however often you shop there. That recovers merchant
+  accuracy from 29% to 81%, against 82% with hand-written rules.
+
+Caveats: single seed; the control is a different set of users than the held-out ones, so per-format gaps of a few
+points are population noise (`card:plain` even scores higher unseen). ACH formats are near 99% on category; the
+two ACH formats without standard markers (`wf`, `plain`) lose 6–8 points on small slices (~200 rows each).
+The boilerplate learner is measured here but not yet switched on in the production pipeline.
+
+This test also caught two bugs: the evaluation briefly counted Starbucks *purchases* as payroll rows (Starbucks is
+also an employer in the data), and the normalizer's URL rule ran before its date rule (`11/01` → `11`). Both are fixed
+and tested; the date fix changes 0 of 98,098 existing outputs.
+
 ## Labeling real data
 
 This is the number founders will ask about.
@@ -412,4 +451,6 @@ This is the number founders will ask about.
   - [x] route "merchant not in directory" rows to the LLM too, with a per-merchant cache (merchant accuracy 52.8% → 82.2%)
 - [x] **Week 4**: Next.js dashboard + Claude tool-calling finance agent with eval set
 - [x] **Week 5**: Render blueprint + CI, public-demo guards, verified model download, [writeup](docs/WRITEUP.md), [demo script](docs/DEMO.md)
+- [x] Unseen-bank-format evaluation + label-free boilerplate learner ([results](results/week5_formats.md))
+- [ ] Switch the boilerplate learner on in the production pipeline (measure it doesn't hurt known formats first)
 - [ ] Hand-labeled real-data eval (`scripts/label.py`) and re-run of the LLM fallback eval on the fixed model

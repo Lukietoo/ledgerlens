@@ -50,6 +50,7 @@ measure memorization.
 | category accuracy | 53.5% | **81.2%** |
 | macro-F1 | 0.583 | **0.672** |
 | accuracy, leak-free slice | 42.8% | **75.8%** |
+| bank formats never seen in training | – | **78.6%** (vs 78.2% seen) |
 | merchant exact match (overall / known chains) | 46.8% / 50.1% | **83.5% / 94.1%** |
 
 With the hybrid LLM fallback (Claude Haiku 5.5, 400 unique hard transactions):
@@ -98,6 +99,12 @@ including New York and Dallas, carried indentation from a multi-line string and 
 The dashboard showed a pilates studio, a gas station and a café all resolving to "New York Times".
 I fixed it, added a regression test, and re-ran every number. One earlier claim, that the full
 model beat its ablation in the cold-start setting, stopped being true, and I removed it.
+
+**The fragile part wasn't the model.** To answer "it only works on formats you generated", I held out
+entire bank statement formats from training. The model didn't notice (78.6% vs 78.2% in-format), but switching off
+the normalizer's hand-written rule for the held-out format dropped merchant-name accuracy to 29%: the bank's wrapper
+text stayed in the name. A label-free learner that finds each statement's boilerplate (words that appear across many
+*different* merchants) brought it back to 81%, vs 82% with the hand-written rules.
 
 **The agent's one miss was a tool bug.** Asked for monthly income, it called a spending-only tool,
 got $0 for every month with no warning, and decided the income was miscategorized. The tool now

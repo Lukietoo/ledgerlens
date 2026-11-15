@@ -1,0 +1,603 @@
+{
+  "seed": 0,
+  "rows": [
+    {
+      "format": "card:plain",
+      "held_out_users": 33,
+      "format_rules": [],
+      "unseen_merchants": {
+        "control": {
+          "n": 18262,
+          "category_acc": 0.7810754572335998,
+          "merchant_exact": 0.4714160551965831,
+          "rules_baseline_acc": 0.49726207425254626
+        },
+        "model_never_saw": {
+          "n": 2216,
+          "category_acc": 0.8208483754512635,
+          "merchant_exact": 0.6060469314079422,
+          "rules_baseline_acc": 0.5103790613718412
+        },
+        "nobody_saw": null,
+        "nobody_saw_learned": null
+      },
+      "seen_merchants": {
+        "control": {
+          "n": 110297,
+          "category_acc": 0.9131617360399649,
+          "merchant_exact": 0.8199044398306391,
+          "rules_baseline_acc": 0.44992157538283
+        },
+        "model_never_saw": {
+          "n": 13100,
+          "category_acc": 0.9065648854961832,
+          "merchant_exact": 0.8696946564885496,
+          "rules_baseline_acc": 0.4385496183206107
+        },
+        "nobody_saw": null,
+        "nobody_saw_learned": null
+      }
+    },
+    {
+      "format": "card:fixed",
+      "held_out_users": 39,
+      "format_rules": [],
+      "unseen_merchants": {
+        "control": {
+          "n": 18077,
+          "category_acc": 0.7803839132599436,
+          "merchant_exact": 0.4728107539967915,
+          "rules_baseline_acc": 0.5020191403440837
+        },
+        "model_never_saw": {
+          "n": 2401,
+          "category_acc": 0.7625989171178675,
+          "merchant_exact": 0.5851728446480633,
+          "rules_baseline_acc": 0.4735526863806747
+        },
+        "nobody_saw": null,
+        "nobody_saw_learned": null
+      },
+      "seen_merchants": {
+        "control": {
+          "n": 106786,
+          "category_acc": 0.9315078755642126,
+          "merchant_exact": 0.8207817504167213,
+          "rules_baseline_acc": 0.44656602925477124
+        },
+        "model_never_saw": {
+          "n": 16611,
+          "category_acc": 0.9214376015893083,
+          "merchant_exact": 0.8535307928481127,
+          "rules_baseline_acc": 0.46252483294202634
+        },
+        "nobody_saw": null,
+        "nobody_saw_learned": null
+      }
+    },
+    {
+      "format": "card:pos",
+      "held_out_users": 51,
+      "format_rules": [
+        "pos"
+      ],
+      "unseen_merchants": {
+        "control": {
+          "n": 16693,
+          "category_acc": 0.7524710956688432,
+          "merchant_exact": 0.47768525729347633,
+          "rules_baseline_acc": 0.5120110225843167
+        },
+        "model_never_saw": {
+          "n": 3785,
+          "category_acc": 0.7548216644649934,
+          "merchant_exact": 0.5225891677675033,
+          "rules_baseline_acc": 0.43989431968295906
+        },
+        "nobody_saw": {
+          "n": 3785,
+          "category_acc": 0.7220607661822985,
+          "merchant_exact": 0.0,
+          "rules_baseline_acc": 0.43989431968295906
+        },
+        "nobody_saw_learned": {
+          "n": 3785,
+          "category_acc": 0.7394980184940555,
+          "merchant_exact": 0.5854689564068692,
+          "rules_baseline_acc": 0.43249669749009245
+        }
+      },
+      "seen_merchants": {
+        "control": {
+          "n": 102512,
+          "category_acc": 0.9052696269705011,
+          "merchant_exact": 0.8281469486499141,
+          "rules_baseline_acc": 0.4458014671453098
+        },
+        "model_never_saw": {
+          "n": 20885,
+          "category_acc": 0.9036629159683983,
+          "merchant_exact": 0.8106775197510174,
+          "rules_baseline_acc": 0.46301173090734976
+        },
+        "nobody_saw": {
+          "n": 20885,
+          "category_acc": 0.8860426143164951,
+          "merchant_exact": 0.47469475700263347,
+          "rules_baseline_acc": 0.46301173090734976
+        },
+        "nobody_saw_learned": {
+          "n": 20885,
+          "category_acc": 0.8937514962892028,
+          "merchant_exact": 0.8539621738089538,
+          "rules_baseline_acc": 0.4635863059612162
+        }
+      }
+    },
+    {
+      "format": "card:wf",
+      "held_out_users": 50,
+      "format_rules": [
+        "wf_purchase",
+        "wf_recurring",
+        "wf_card_ref",
+        "card_last4"
+      ],
+      "unseen_merchants": {
+        "control": {
+          "n": 17277,
+          "category_acc": 0.7948139144527406,
+          "merchant_exact": 0.4934884528563987,
+          "rules_baseline_acc": 0.4982925276379001
+        },
+        "model_never_saw": {
+          "n": 3201,
+          "category_acc": 0.7906904092471103,
+          "merchant_exact": 0.4454857856919713,
+          "rules_baseline_acc": 0.5007810059356451
+        },
+        "nobody_saw": {
+          "n": 3201,
+          "category_acc": 0.7475788815995001,
+          "merchant_exact": 0.0,
+          "rules_baseline_acc": 0.5007810059356451
+        },
+        "nobody_saw_learned": {
+          "n": 3201,
+          "category_acc": 0.7825679475164011,
+          "merchant_exact": 0.38331771321462044,
+          "rules_baseline_acc": 0.5007810059356451
+        }
+      },
+      "seen_merchants": {
+        "control": {
+          "n": 102389,
+          "category_acc": 0.9338405492777544,
+          "merchant_exact": 0.8311830372403286,
+          "rules_baseline_acc": 0.4538085145865278
+        },
+        "model_never_saw": {
+          "n": 21008,
+          "category_acc": 0.9131283320639756,
+          "merchant_exact": 0.795982482863671,
+          "rules_baseline_acc": 0.4238861386138614
+        },
+        "nobody_saw": {
+          "n": 21008,
+          "category_acc": 0.885519801980198,
+          "merchant_exact": 0.021372810357958873,
+          "rules_baseline_acc": 0.4238861386138614
+        },
+        "nobody_saw_learned": {
+          "n": 21008,
+          "category_acc": 0.9173172124904798,
+          "merchant_exact": 0.7930788271134805,
+          "rules_baseline_acc": 0.425504569687738
+        }
+      }
+    },
+    {
+      "format": "card:boa",
+      "held_out_users": 43,
+      "format_rules": [
+        "checkcard",
+        "long_ref"
+      ],
+      "unseen_merchants": {
+        "control": {
+          "n": 17535,
+          "category_acc": 0.7904761904761904,
+          "merchant_exact": 0.4903906472768748,
+          "rules_baseline_acc": 0.48502994011976047
+        },
+        "model_never_saw": {
+          "n": 2943,
+          "category_acc": 0.7917091403329936,
+          "merchant_exact": 0.4597349643221203,
+          "rules_baseline_acc": 0.5800203873598369
+        },
+        "nobody_saw": {
+          "n": 2943,
+          "category_acc": 0.7889908256880734,
+          "merchant_exact": 0.0,
+          "rules_baseline_acc": 0.5800203873598369
+        },
+        "nobody_saw_learned": {
+          "n": 2943,
+          "category_acc": 0.7920489296636085,
+          "merchant_exact": 0.38803941556235133,
+          "rules_baseline_acc": 0.582398912674142
+        }
+      },
+      "seen_merchants": {
+        "control": {
+          "n": 105611,
+          "category_acc": 0.9237295357491171,
+          "merchant_exact": 0.8245637291570007,
+          "rules_baseline_acc": 0.44788895096154757
+        },
+        "model_never_saw": {
+          "n": 17786,
+          "category_acc": 0.92398515686495,
+          "merchant_exact": 0.8289103789497357,
+          "rules_baseline_acc": 0.453615202968627
+        },
+        "nobody_saw": {
+          "n": 17786,
+          "category_acc": 0.9169571573147419,
+          "merchant_exact": 0.601146969526594,
+          "rules_baseline_acc": 0.453615202968627
+        },
+        "nobody_saw_learned": {
+          "n": 17786,
+          "category_acc": 0.915607781401102,
+          "merchant_exact": 0.7897222534577758,
+          "rules_baseline_acc": 0.4533340829866187
+        }
+      }
+    },
+    {
+      "format": "card:title",
+      "held_out_users": 34,
+      "format_rules": [],
+      "unseen_merchants": {
+        "control": {
+          "n": 18154,
+          "category_acc": 0.7943703866916382,
+          "merchant_exact": 0.49730087033160736,
+          "rules_baseline_acc": 0.505453343615732
+        },
+        "model_never_saw": {
+          "n": 2324,
+          "category_acc": 0.7943201376936316,
+          "merchant_exact": 0.39759036144578314,
+          "rules_baseline_acc": 0.4457831325301205
+        },
+        "nobody_saw": null,
+        "nobody_saw_learned": null
+      },
+      "seen_merchants": {
+        "control": {
+          "n": 109390,
+          "category_acc": 0.9332023036840662,
+          "merchant_exact": 0.825175975866167,
+          "rules_baseline_acc": 0.4491635432854923
+        },
+        "model_never_saw": {
+          "n": 14007,
+          "category_acc": 0.9273934461340758,
+          "merchant_exact": 0.8253016348968373,
+          "rules_baseline_acc": 0.44520596844434923
+        },
+        "nobody_saw": null,
+        "nobody_saw_learned": null
+      }
+    },
+    {
+      "format": "card:debit",
+      "held_out_users": 50,
+      "format_rules": [
+        "debit_card"
+      ],
+      "unseen_merchants": {
+        "control": {
+          "n": 16870,
+          "category_acc": 0.7813278008298755,
+          "merchant_exact": 0.4996443390634262,
+          "rules_baseline_acc": 0.4907528156490812
+        },
+        "model_never_saw": {
+          "n": 3608,
+          "category_acc": 0.7965631929046563,
+          "merchant_exact": 0.42211751662971175,
+          "rules_baseline_acc": 0.5357538802660754
+        },
+        "nobody_saw": {
+          "n": 3608,
+          "category_acc": 0.774390243902439,
+          "merchant_exact": 0.0,
+          "rules_baseline_acc": 0.5357538802660754
+        },
+        "nobody_saw_learned": {
+          "n": 3608,
+          "category_acc": 0.7782705099778271,
+          "merchant_exact": 0.4356984478935698,
+          "rules_baseline_acc": 0.5357538802660754
+        }
+      },
+      "seen_merchants": {
+        "control": {
+          "n": 103397,
+          "category_acc": 0.9498824917550799,
+          "merchant_exact": 0.827171001092875,
+          "rules_baseline_acc": 0.4478563207830014
+        },
+        "model_never_saw": {
+          "n": 20000,
+          "category_acc": 0.94735,
+          "merchant_exact": 0.81495,
+          "rules_baseline_acc": 0.45315
+        },
+        "nobody_saw": {
+          "n": 20000,
+          "category_acc": 0.92085,
+          "merchant_exact": 0.09715,
+          "rules_baseline_acc": 0.45315
+        },
+        "nobody_saw_learned": {
+          "n": 20000,
+          "category_acc": 0.9434,
+          "merchant_exact": 0.7944,
+          "rules_baseline_acc": 0.45315
+        }
+      }
+    },
+    {
+      "format": "ach:chase",
+      "held_out_users": 75,
+      "format_rules": [
+        "ach_sec_tail",
+        "ach_sec_id"
+      ],
+      "unseen_merchants": {
+        "control": {
+          "n": 604,
+          "category_acc": 0.9801324503311258,
+          "merchant_exact": 0.0,
+          "rules_baseline_acc": 0.5827814569536424
+        },
+        "model_never_saw": {
+          "n": 291,
+          "category_acc": 1.0,
+          "merchant_exact": 0.0,
+          "rules_baseline_acc": 0.5463917525773195
+        },
+        "nobody_saw": {
+          "n": 291,
+          "category_acc": 1.0,
+          "merchant_exact": 0.0,
+          "rules_baseline_acc": 0.5463917525773195
+        },
+        "nobody_saw_learned": {
+          "n": 291,
+          "category_acc": 1.0,
+          "merchant_exact": 0.0,
+          "rules_baseline_acc": 0.5463917525773195
+        }
+      },
+      "seen_merchants": {
+        "control": {
+          "n": 12770,
+          "category_acc": 0.9971808927173061,
+          "merchant_exact": 0.6919342208300705,
+          "rules_baseline_acc": 0.8151135473766641
+        },
+        "model_never_saw": {
+          "n": 4147,
+          "category_acc": 0.9971063419339281,
+          "merchant_exact": 0.7417410176030865,
+          "rules_baseline_acc": 0.7880395466602363
+        },
+        "nobody_saw": {
+          "n": 4147,
+          "category_acc": 0.9971063419339281,
+          "merchant_exact": 0.7359537014709429,
+          "rules_baseline_acc": 0.7880395466602363
+        },
+        "nobody_saw_learned": {
+          "n": 4147,
+          "category_acc": 0.9971063419339281,
+          "merchant_exact": 0.7359537014709429,
+          "rules_baseline_acc": 0.7880395466602363
+        }
+      }
+    },
+    {
+      "format": "ach:boa",
+      "held_out_users": 85,
+      "format_rules": [
+        "ach_des"
+      ],
+      "unseen_merchants": {
+        "control": {
+          "n": 715,
+          "category_acc": 0.9986013986013986,
+          "merchant_exact": 0.0,
+          "rules_baseline_acc": 0.6307692307692307
+        },
+        "model_never_saw": {
+          "n": 180,
+          "category_acc": 1.0,
+          "merchant_exact": 0.0,
+          "rules_baseline_acc": 0.3333333333333333
+        },
+        "nobody_saw": {
+          "n": 180,
+          "category_acc": 1.0,
+          "merchant_exact": 0.0,
+          "rules_baseline_acc": 0.3333333333333333
+        },
+        "nobody_saw_learned": {
+          "n": 180,
+          "category_acc": 1.0,
+          "merchant_exact": 0.0,
+          "rules_baseline_acc": 0.3333333333333333
+        }
+      },
+      "seen_merchants": {
+        "control": {
+          "n": 12138,
+          "category_acc": 0.9933267424616905,
+          "merchant_exact": 0.6861097380128522,
+          "rules_baseline_acc": 0.8027681660899654
+        },
+        "model_never_saw": {
+          "n": 4779,
+          "category_acc": 0.9880728185812931,
+          "merchant_exact": 0.7499476878007951,
+          "rules_baseline_acc": 0.8229755178907722
+        },
+        "nobody_saw": {
+          "n": 4779,
+          "category_acc": 0.9905838041431262,
+          "merchant_exact": 0.3103159656831973,
+          "rules_baseline_acc": 0.8229755178907722
+        },
+        "nobody_saw_learned": {
+          "n": 4779,
+          "category_acc": 0.9880728185812931,
+          "merchant_exact": 0.738857501569366,
+          "rules_baseline_acc": 0.8229755178907722
+        }
+      }
+    },
+    {
+      "format": "ach:wf",
+      "held_out_users": 71,
+      "format_rules": [],
+      "unseen_merchants": {
+        "control": {
+          "n": 657,
+          "category_acc": 0.9817351598173516,
+          "merchant_exact": 0.0,
+          "rules_baseline_acc": 0.5068493150684932
+        },
+        "model_never_saw": {
+          "n": 238,
+          "category_acc": 0.8991596638655462,
+          "merchant_exact": 0.0,
+          "rules_baseline_acc": 0.7478991596638656
+        },
+        "nobody_saw": null,
+        "nobody_saw_learned": null
+      },
+      "seen_merchants": {
+        "control": {
+          "n": 12880,
+          "category_acc": 0.9994565217391305,
+          "merchant_exact": 0.7542701863354038,
+          "rules_baseline_acc": 0.8100931677018633
+        },
+        "model_never_saw": {
+          "n": 4037,
+          "category_acc": 0.9923210304681694,
+          "merchant_exact": 0.5442160019816695,
+          "rules_baseline_acc": 0.8033192965073074
+        },
+        "nobody_saw": null,
+        "nobody_saw_learned": null
+      }
+    },
+    {
+      "format": "ach:plain",
+      "held_out_users": 69,
+      "format_rules": [],
+      "unseen_merchants": {
+        "control": {
+          "n": 709,
+          "category_acc": 0.997179125528914,
+          "merchant_exact": 0.0,
+          "rules_baseline_acc": 0.5599435825105783
+        },
+        "model_never_saw": {
+          "n": 186,
+          "category_acc": 0.9354838709677419,
+          "merchant_exact": 0.0,
+          "rules_baseline_acc": 0.6129032258064516
+        },
+        "nobody_saw": null,
+        "nobody_saw_learned": null
+      },
+      "seen_merchants": {
+        "control": {
+          "n": 12963,
+          "category_acc": 0.9944457301550567,
+          "merchant_exact": 0.6832523335647612,
+          "rules_baseline_acc": 0.8056776980637198
+        },
+        "model_never_saw": {
+          "n": 3954,
+          "category_acc": 0.9787556904400607,
+          "merchant_exact": 0.772635306019221,
+          "rules_baseline_acc": 0.817653009610521
+        },
+        "nobody_saw": null,
+        "nobody_saw_learned": null
+      }
+    }
+  ],
+  "summary": {
+    "card": {
+      "unseen_merchants": {
+        "control": 0.7823599309828434,
+        "model_never_saw": 0.7856235960543022,
+        "nobody_saw_formats_with_rules": 0.7565930412942307,
+        "nobody_saw_learned": 0.7714412351333383,
+        "merchant_nobody_saw_learned": 0.45482750978798847,
+        "same_formats_model_never_saw": 0.7824481051931743,
+        "merchant_control": 0.48598495946869813,
+        "merchant_model_never_saw": 0.48598495946869813,
+        "merchant_nobody_saw": 0.0,
+        "merchant_same_formats_model_never_saw": 0.46391371795818864
+      },
+      "seen_merchants": {
+        "control": 0.9271713790988976,
+        "model_never_saw": 0.9206787847354474,
+        "nobody_saw_formats_with_rules": 0.9015424390366344,
+        "nobody_saw_learned": 0.9173056890774232,
+        "merchant_nobody_saw_learned": 0.8086195860891828,
+        "same_formats_model_never_saw": 0.9216606634119404,
+        "merchant_control": 0.8251902396330543,
+        "merchant_model_never_saw": 0.8251902396330543,
+        "merchant_nobody_saw": 0.2886331404761606,
+        "merchant_same_formats_model_never_saw": 0.8119454310420563
+      }
+    },
+    "ach": {
+      "unseen_merchants": {
+        "control": 0.9899441340782122,
+        "model_never_saw": 0.9597765363128492,
+        "nobody_saw_formats_with_rules": 1.0,
+        "nobody_saw_learned": 1.0,
+        "merchant_nobody_saw_learned": 0.0,
+        "same_formats_model_never_saw": 1.0,
+        "merchant_control": 0.0,
+        "merchant_model_never_saw": 0.0,
+        "merchant_nobody_saw": 0.0,
+        "merchant_same_formats_model_never_saw": 0.0
+      },
+      "seen_merchants": {
+        "control": 0.9961380071328644,
+        "model_never_saw": 0.9891233670272507,
+        "nobody_saw_formats_with_rules": 0.993614160878333,
+        "nobody_saw_learned": 0.9922697736948242,
+        "merchant_nobody_saw_learned": 0.7375084024198969,
+        "same_formats_model_never_saw": 0.9922697736948242,
+        "merchant_control": 0.7041437607140746,
+        "merchant_model_never_saw": 0.7041437607140746,
+        "merchant_nobody_saw": 0.5080663231010532,
+        "merchant_same_formats_model_never_saw": 0.746134886847412
+      }
+    }
+  }
+}
