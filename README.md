@@ -19,11 +19,11 @@ recurring detector), with an LLM planned only as a fallback for low-confidence c
 | category accuracy | 53.5% | **81.2%** |
 | category macro-F1 | 0.583 | **0.672** |
 | accuracy, leak-free slice ([why](#leakage-check)) | 42.8% | **75.8%** |
-| merchant name exactly right (known chains) | 50.1% | **94.1%** |
+| merchant name exactly right (all / known chains) | 46.8% / 50.1% | **87.5% / 94.3%** |
 | throughput (4 workers, M1 laptop) | – | **11.5K txns/s**, p95 38 ms per 100-txn batch |
 | bank statement formats never seen in training | – | **78.6%** category (vs 78.2% on seen formats) |
 | hybrid with Claude Haiku 5.5 fallback (400 unseen txns) | – | **91.2% category / 82.2% merchant**, matching Haiku-only (91.5% / 83.8%) |
-| serving cost per 1M txns | – | ≈ $0.004 model only · **≈ $0.59–1.15 hybrid** (cached) · $26 Haiku-only |
+| serving cost per 1M txns | – | ≈ $0.004 model only · **≈ $0.56–1.13 hybrid** (cached) · $26 Haiku-only |
 
 Synthetic data, mean of 3 seeds. Real hand-labeled numbers: [in progress](#labeling-real-data).
 
@@ -79,7 +79,7 @@ curl -s localhost:8000/v1/enrich -H 'content-type: application/json' -d '{"trans
 | `ledgerlens/guards.py` | public-deploy guards: per-client rate limits, daily LLM spend cap |
 | `scripts/fetch_model.py` | download + SHA-256-verify the model for deploys (or train) |
 | `ledgerlens/format_eval.py` | leave-one-bank-format-out evaluation (unseen statement formats) |
-| `ledgerlens/boilerplate.py` | learns a bank's wrapper words from one statement, no labels |
+| `ledgerlens/boilerplate.py` | learns a bank's wrapper words from one statement, no labels (used for merchant names) |
 | `ledgerlens/agent_eval.py` | 42-question agent eval with independent ground truth (97.6% on Haiku 5.5) |
 | `web/` | Next.js dashboard: decode hero, spending chart, transaction feed, recurring, chat |
 | `ledgerlens/evaluate.py` | metrics on synthetic test split and/or real labeled set |
@@ -164,7 +164,8 @@ merchants are also hidden from the directory, so LightGBM learns how much to tru
 | full model, first-seen txn (no history) | 73.1% ± 0.2 | 0.630 | 65.9% | 79.4% |
 
 With the full merchant directory available (production setting), the full model reaches **86.7% ± 3.2**.
-Merchant resolution goes from **46.8% → 83.5%** exact match overall (**94.1%** on known chains).
+Merchant resolution goes from **46.8% → 83.5%** exact match overall (**94.1%** on known chains); with the Week 5
+boilerplate learner, **87.5%** (94.3%).
 **In the cold regime the resolver is neutral** (80.5% ± 0.9 vs 81.2% ± 0.3 without it, within noise): it can't match
 a merchant the directory doesn't have. It earns its place in the warm regime and in merchant names.
 Inference takes about 25 ms for a small batch on a laptop (see the Week 3 load test).
@@ -280,12 +281,12 @@ Hybrid v1 first measured 92.0% with one LLM answer per *description*. It now use
 
 LLM answers are cached per merchant key (cleaned merchant + money in/out), so a merchant costs one call the
 first time it's seen and nothing after. Over a year of test traffic that's **4.4 LLM calls per 100 txns
-(cold) / 2.3 (warm)** for hybrid v2, even though it *routes* 96% / 35% of rows.
+(cold) / 2.1 (warm)** for hybrid v2, even though it *routes* 96% / 35% of rows.
 
 | | per 1M txns |
 |---|---|
 | Ledgerlens model only (measured throughput, assumes $0.04/vCPU-hour) | **≈ $0.004** |
-| **hybrid v2 + cache, Haiku 5.5** (measured tokens: 103 in / 31 out per txn) | **≈ $0.59 warm / $1.15 cold** |
+| **hybrid v2 + cache, Haiku 5.5** (measured tokens: 103 in / 31 out per txn) | **≈ $0.56 warm / $1.13 cold** |
 | hybrid v1 without cache, Haiku 5.5 | ≈ $4.08 / $5.92 |
 | Haiku 5.5 only | ≈ $26 |
 | hybrid v2 + cache / LLM-only, Opus 5.5 | ≈ $31–61 / $1,381 (est.) |
@@ -386,7 +387,9 @@ matches [model.sha256](model.sha256), which is committed with the code. With no 
 Steps:
 
 1. Push the repo to GitHub, then publish the model and pin its checksum:
-   `scripts/release_model.sh model-v1` (needs `gh auth login`; commit the updated `model.sha256`).
+   `scripts/release_model.sh model-vN` (needs `gh auth login`; commit the updated `model.sha256`). The current release
+   is [model-v2](https://github.com/Lukietoo/ledgerlens/releases/tag/model-v2); a deploy pointing at an older
+   release fails its checksum check and refuses to install, by design.
 2. In Render: **New → Blueprint**, pick the repo. When prompted, paste `ANTHROPIC_API_KEY` and the
    `LEDGERLENS_MODEL_URL` that the release script printed.
 3. Open the `ledgerlens-web` URL and click **Try it on a demo account**.
@@ -406,10 +409,10 @@ with its rule switched off (**nobody saw it**, as if a new bank showed up tomorr
 
 | card formats, row-weighted | category (unseen merchants) | merchant name (known merchants) |
 |---|---|---|
-| control: users whose format the model trained on | 78.2% | 82.5% |
-| **model never saw the format** | **78.6%** | **82.5%** |
-| nobody saw it: format rule switched off | 75.7% | 28.9% |
-| **nobody saw it + boilerplate learned from the statement** | **77.1%** | **80.9%** |
+| control: users whose format the model trained on | 78.2% | 89.6% |
+| **model never saw the format** | **78.6%** | **89.6%** |
+| nobody saw it: format rule off, learner off | 75.7% | 28.9% |
+| **nobody saw it: format rule off, learner on (shipped)** | 75.7% | **86.4%** |
 
 - **The ML model generalizes to new statement formats:** no measurable loss.
 - **The hand-written cleanup was the fragile part.** Without its rule, the bank's wrapper text stays in the merchant
@@ -417,17 +420,42 @@ with its rule switched off (**nobody saw it**, as if a new bank showed up tomorr
 - **So I replaced the need for the rule.** [boilerplate.py](ledgerlens/boilerplate.py) learns a bank's wrapper words
   from the statement itself, with no labels and no format knowledge. A bank's boilerplate appears across many
   *different* merchants (`PURCHASE`, `CHECKCARD`, `POS DEBIT`, the home city, the account holder's name), while a real
-  merchant word repeats only within its own few store variants, however often you shop there. That recovers merchant
-  accuracy from 29% to 81%, against 82% with hand-written rules.
+  merchant word repeats only within its own few store variants, however often you shop there. It brings merchant
+  names on a never-seen bank back from 29% to 86%.
 
-Caveats: single seed; the control is a different set of users than the held-out ones, so per-format gaps of a few
-points are population noise (`card:plain` even scores higher unseen). ACH formats are near 99% on category; the
-two ACH formats without standard markers (`wf`, `plain`) lose 6–8 points on small slices (~200 rows each).
-The boilerplate learner is measured here but not yet switched on in the production pipeline.
+### Turning it on: names yes, categories no
 
-This test also caught two bugs: the evaluation briefly counted Starbucks *purchases* as payroll rows (Starbucks is
-also an employer in the data), and the normalizer's URL rule ran before its date rule (`11/01` → `11`). Both are fixed
-and tested; the date fix changes 0 of 98,098 existing outputs.
+Switching the learner on went through a no-regression gate: retrain on 3 seeds and compare every committed number.
+
+1. **Stripping the raw text broke the hand-written rules.** They anchor on the very words the learner removes: a
+   trailing state code is how a city gets stripped, and `PURCHASE AUTHORIZED ON` is how the date in front of `SQ *`
+   goes. A dataset-wide invariant check ("the learner may only remove words") found **15% of rows *gaining* words**,
+   like "LOWES" → "LOWES SAN DIEGO". Fix: the learner runs on the normalizer's *output*. Now 0 of 216,336 rows gain
+   a word.
+2. **Feeding the learner's output to the category model hurt.** Names improved, but category accuracy on formats
+   the model already knew dropped 1–3.5 points, beyond seed noise. That failed the gate.
+3. **Shipped: names only.** Category features keep exactly the text the model trained on; only merchant naming
+   (and the LLM cache key) uses the learner's output. The re-run gate changed **0 of 49 category metrics**, and names
+   improved everywhere:
+
+| merchant name, exact match | before | learner on (names only) |
+|---|---|---|
+| overall, warm directory | 83.5% | **87.5%** |
+| overall, cold (unseen merchants) | 44.2% | **56.7%** |
+| local businesses | 44.4% | **64.7%** |
+| known chains | 94.1% | 94.3% |
+
+Cleaner names also group better in the LLM cache: 2.13 calls per 100 transactions (warm), down from 2.26.
+
+Caveats: single seed for the format test; the control is a different set of users than the held-out ones, so
+per-format gaps of a few points are population noise (`card:plain` even scores higher unseen). ACH formats are near
+99% on category; the two ACH formats without standard markers (`wf`, `plain`) lose 6–8 points on small slices
+(~200 rows each). The LLM-fallback and agent evals predate the learner; their categories are unaffected, but merchant
+names in them would now be better.
+
+This work also caught two smaller bugs: the evaluation briefly counted Starbucks *purchases* as payroll (Starbucks is
+also an employer in the data), and the normalizer removed dates too late for a processor prefix to be found once a
+wrapper was gone (`03/14 SQ *BLUE…`). Both are fixed and tested; neither changes any existing output.
 
 ## Labeling real data
 
@@ -452,5 +480,5 @@ This is the number founders will ask about.
 - [x] **Week 4**: Next.js dashboard + Claude tool-calling finance agent with eval set
 - [x] **Week 5**: Render blueprint + CI, public-demo guards, verified model download, [writeup](docs/WRITEUP.md), [demo script](docs/DEMO.md)
 - [x] Unseen-bank-format evaluation + label-free boilerplate learner ([results](results/week5_formats.md))
-- [ ] Switch the boilerplate learner on in the production pipeline (measure it doesn't hurt known formats first)
+- [x] Boilerplate learner on in production for merchant names (category unaffected by design; see the gate above)
 - [ ] Hand-labeled real-data eval (`scripts/label.py`) and re-run of the LLM fallback eval on the fixed model

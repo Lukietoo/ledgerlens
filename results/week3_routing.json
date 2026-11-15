@@ -126,17 +126,17 @@
     "policies": {
       "confidence < 0.8 (week 3)": {
         "routed_rows": 0.22797520300357985,
-        "llm_calls_per_txn_cached": 0.012442154893914259,
-        "unique_keys_routed": 285,
+        "llm_calls_per_txn_cached": 0.01191827468785471,
+        "unique_keys_routed": 273,
         "model_acc_unknown_confident": null,
         "share_unknown_confident": 0.0
       },
       "confidence < 0.8 OR merchant not in directory": {
-        "routed_rows": 0.9581332401990745,
-        "llm_calls_per_txn_cached": 0.04435519077970837,
-        "unique_keys_routed": 1016,
-        "model_acc_unknown_confident": 0.8826905829596412,
-        "share_unknown_confident": 0.7301580371954947
+        "routed_rows": 0.9574783899415,
+        "llm_calls_per_txn_cached": 0.043569370470619054,
+        "unique_keys_routed": 998,
+        "model_acc_unknown_confident": 0.8825852782764811,
+        "share_unknown_confident": 0.7295031869379202
       }
     }
   },
@@ -267,17 +267,17 @@
     "policies": {
       "confidence < 0.8 (week 3)": {
         "routed_rows": 0.15720771850170262,
-        "llm_calls_per_txn_cached": 0.010695887540382433,
-        "unique_keys_routed": 245,
+        "llm_calls_per_txn_cached": 0.010041037282807998,
+        "unique_keys_routed": 230,
         "model_acc_unknown_confident": null,
         "share_unknown_confident": 0.0
       },
       "confidence < 0.8 OR merchant not in directory": {
-        "routed_rows": 0.35911988125381994,
-        "llm_calls_per_txn_cached": 0.022570505544398847,
-        "unique_keys_routed": 517,
-        "model_acc_unknown_confident": 0.9868108108108108,
-        "share_unknown_confident": 0.20191216275211735
+        "routed_rows": 0.35732995721644983,
+        "llm_calls_per_txn_cached": 0.02134811839692657,
+        "unique_keys_routed": 489,
+        "model_acc_unknown_confident": 0.9888743455497382,
+        "share_unknown_confident": 0.20012223871474724
       }
     }
   }

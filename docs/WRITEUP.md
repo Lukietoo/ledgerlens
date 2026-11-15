@@ -51,7 +51,7 @@ measure memorization.
 | macro-F1 | 0.583 | **0.672** |
 | accuracy, leak-free slice | 42.8% | **75.8%** |
 | bank formats never seen in training | – | **78.6%** (vs 78.2% seen) |
-| merchant exact match (overall / known chains) | 46.8% / 50.1% | **83.5% / 94.1%** |
+| merchant exact match (overall / known chains) | 46.8% / 50.1% | **87.5% / 94.3%** |
 
 With the hybrid LLM fallback (Claude Haiku 5.5, 400 unique hard transactions):
 
@@ -104,7 +104,10 @@ model beat its ablation in the cold-start setting, stopped being true, and I rem
 entire bank statement formats from training. The model didn't notice (78.6% vs 78.2% in-format), but switching off
 the normalizer's hand-written rule for the held-out format dropped merchant-name accuracy to 29%: the bank's wrapper
 text stayed in the name. A label-free learner that finds each statement's boilerplate (words that appear across many
-*different* merchants) brought it back to 81%, vs 82% with the hand-written rules.
+*different* merchants) brought it back to 86%. Turning it on in production took two more tries. Run on the raw text,
+it removed the words the hand-written rules anchor on, so a dataset-wide check found 15% of rows gaining words. Fed
+to the category model, it cost 1–3.5 points of category accuracy. Shipped: it runs on the normalizer's output and
+only names merchants, with category metrics unchanged (0 of 49 moved) and merchant names up from 83.5% to 87.5%.
 
 **The agent's one miss was a tool bug.** Asked for monthly income, it called a spending-only tool,
 got $0 for every month with no warning, and decided the income was miscategorized. The tool now

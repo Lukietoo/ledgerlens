@@ -13,12 +13,12 @@
   },
   "cached_llm_calls_per_txn": {
     "cold": {
-      "confidence < 0.8 (week 3)": 0.012442154893914259,
-      "confidence < 0.8 OR merchant not in directory": 0.04435519077970837
+      "confidence < 0.8 (week 3)": 0.01191827468785471,
+      "confidence < 0.8 OR merchant not in directory": 0.043569370470619054
     },
     "warm": {
-      "confidence < 0.8 (week 3)": 0.010695887540382433,
-      "confidence < 0.8 OR merchant not in directory": 0.022570505544398847
+      "confidence < 0.8 (week 3)": 0.010041037282807998,
+      "confidence < 0.8 OR merchant not in directory": 0.02134811839692657
     }
   },
   "threshold": 0.8,
@@ -31,8 +31,8 @@
       "llm_only_per_1m": 1381.48,
       "hybrid_cold_per_1m": 314.9470495324355,
       "hybrid_warm_per_1m": 217.18318504278213,
-      "cached_new_policy_cold_per_1m": 61.279675045401575,
-      "cached_new_policy_warm_per_1m": 31.184568086526177
+      "cached_new_policy_cold_per_1m": 60.19408000480087,
+      "cached_new_policy_warm_per_1m": 29.495864690036175
     },
     {
       "model": "claude-sonnet-5-5",
@@ -42,8 +42,8 @@
       "llm_only_per_1m": 690.74,
       "hybrid_cold_per_1m": 157.4754578097428,
       "hybrid_warm_per_1m": 108.59352556491609,
-      "cached_new_policy_cold_per_1m": 30.641770566225816,
-      "cached_new_policy_warm_per_1m": 15.594217086788117
+      "cached_new_policy_cold_per_1m": 30.09897304592546,
+      "cached_new_policy_warm_per_1m": 14.749865388543116
     },
     {
       "model": "claude-haiku-5-5",
@@ -53,8 +53,8 @@
       "llm_only_per_1m": 25.94775,
       "hybrid_cold_per_1m": 5.919309660786195,
       "hybrid_warm_per_1m": 4.083052664802608,
-      "cached_new_policy_cold_per_1m": 1.1547834886042339,
-      "cached_new_policy_warm_per_1m": 0.589519922289731
+      "cached_new_policy_cold_per_1m": 1.1343932196790616,
+      "cached_new_policy_warm_per_1m": 0.5578017261839072
     }
   ]
 }

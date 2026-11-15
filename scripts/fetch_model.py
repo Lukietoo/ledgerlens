@@ -1,6 +1,6 @@
 """Put a verified model at models/enricher.joblib for a deployment build.
 
-    LEDGERLENS_MODEL_URL=https://github.com/<you>/ledgerlens/releases/download/model-v1/enricher.joblib \
+    LEDGERLENS_MODEL_URL=https://github.com/<you>/ledgerlens/releases/download/model-v2/enricher.joblib \
         python scripts/fetch_model.py
 
 The artifact is a joblib pickle, and loading a pickle runs code, so the download must

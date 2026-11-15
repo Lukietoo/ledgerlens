@@ -17,13 +17,13 @@ Brand-clean = excludes the 9 test merchants that the hand-written rules name by 
 
 ## Merchant resolution (exact canonical-name match)
 
-Abstain threshold tuned on val: **0.608**
+Abstain threshold tuned on val: **0.625**
 
 | method | overall | chain | local | template |
 |---|---|---|---|---|
 | normalizer_only (week 1) | 46.8% | 50.1% | 49.8% | 11.6% |
-| resolver_cold | 44.2% | 48.0% | 44.4% | 11.6% |
-| resolver_warm | 83.5% | 94.1% | 44.4% | 79.2% |
+| resolver_cold | 56.7% | 59.9% | 64.7% | 11.6% |
+| resolver_warm | 87.5% | 94.3% | 64.7% | 79.2% |
 
 ## Full model: top confusions (cold, seed 0)
 
