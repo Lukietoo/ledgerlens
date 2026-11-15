@@ -24,7 +24,7 @@
     "id": "q04",
     "kind": "number",
     "question": "How much did I spend on dining in September 2026?",
-    "answer": 243.76,
+    "answer": 255.4,
     "note": ""
   },
   {
@@ -100,22 +100,22 @@
   {
     "id": "q15",
     "kind": "number",
-    "question": "How much have I spent at New York Times in total?",
-    "answer": 2482.12,
+    "question": "How much have I spent at Hy-Vee in total?",
+    "answer": 2187.61,
     "note": ""
   },
   {
     "id": "q16",
     "kind": "number",
-    "question": "How much have I spent at Hy Vee New York in total?",
-    "answer": 2187.61,
+    "question": "How much have I spent at Bay Club in total?",
+    "answer": 1913.88,
     "note": ""
   },
   {
     "id": "q17",
     "kind": "number",
-    "question": "How much have I spent at Bay Club in total?",
-    "answer": 1913.88,
+    "question": "How much have I spent at Leo's Pilates in total?",
+    "answer": 1237.65,
     "note": ""
   },
   {
@@ -128,28 +128,28 @@
   {
     "id": "q19",
     "kind": "count",
-    "question": "How many transactions do I have at New York Times?",
-    "answer": 80.0,
-    "note": ""
-  },
-  {
-    "id": "q20",
-    "kind": "count",
     "question": "How many transactions do I have at Taco Bell?",
     "answer": 50.0,
     "note": ""
   },
   {
-    "id": "q21",
+    "id": "q20",
     "kind": "count",
     "question": "How many transactions do I have at Philz Coffee?",
-    "answer": 37.0,
+    "answer": 44.0,
+    "note": ""
+  },
+  {
+    "id": "q21",
+    "kind": "count",
+    "question": "How many transactions do I have at Hy-Vee?",
+    "answer": 32.0,
     "note": ""
   },
   {
     "id": "q22",
     "kind": "count",
-    "question": "How many transactions do I have at Hy Vee New York?",
+    "question": "How many transactions do I have at FasTrak?",
     "answer": 32.0,
     "note": ""
   },
@@ -171,14 +171,14 @@
     "id": "q25",
     "kind": "number",
     "question": "On average, how much do I spend on shopping per month?",
-    "answer": 593.03,
+    "answer": 588.38,
     "note": "average over full months"
   },
   {
     "id": "q26",
     "kind": "number",
     "question": "On average, how much do I spend on dining per month?",
-    "answer": 301.36,
+    "answer": 326.56,
     "note": "average over full months"
   },
   {

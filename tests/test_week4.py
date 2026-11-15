@@ -131,6 +131,25 @@ def test_system_prompt_guards(small_ledger):
         assert s["additionalProperties"] is False and set(s["required"]) == set(s["properties"])
 
 
+def _walk(schema):
+    yield schema
+    for sub in schema.get("anyOf", []):
+        yield from _walk(sub)
+    for sub in schema.get("properties", {}).values():
+        yield from _walk(sub)
+
+
+def test_tool_schemas_are_api_valid():
+    # regression: the API rejected {"type": ["string","null"], "enum": [...]} with a 400;
+    # the fake client never validates schemas, so check the shape here.
+    for t in TOOLS:
+        for node in _walk(t["input_schema"]):
+            if "enum" in node:
+                assert isinstance(node.get("type"), str), (t["name"], node)
+                assert None not in node["enum"], (t["name"], node)
+                assert all(isinstance(v, str) for v in node["enum"]), (t["name"], node)
+
+
 def test_grader():
     Q = agent_eval.Question
     assert agent_eval.grade(Q("a", "number", "", 1234.56), "You spent $1,234.56 in March.")

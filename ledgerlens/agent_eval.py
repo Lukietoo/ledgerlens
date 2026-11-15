@@ -177,8 +177,21 @@ def main() -> None:
 
     agent = FinanceAgent(anthropic.Anthropic(), ledger, model=args.model)
     rows = []
+    consecutive_errors = 0
     for q in qs:
-        r = agent.run([{"role": "user", "content": q.question}])
+        try:
+            r = agent.run([{"role": "user", "content": q.question}])
+            consecutive_errors = 0
+        except anthropic.APIError as e:
+            # keep answers already paid for; but a broken setup (bad schema, bad key) fails fast
+            consecutive_errors += 1
+            print(f"{q.id} ! API error: {type(e).__name__}: {str(e)[:200]}")
+            if consecutive_errors >= 3:
+                raise SystemExit("3 API errors in a row; stopping. Fix the error above and re-run.") from e
+            rows.append({**asdict(q), "reply": "", "correct": False, "tools": [], "tool_errors": 0,
+                         "stop_reason": f"api_error:{type(e).__name__}", "seconds": 0.0, "cost_usd": 0.0,
+                         "input_tokens": 0, "output_tokens": 0})
+            continue
         ok = grade(q, r.reply)
         rows.append({**asdict(q), "reply": r.reply, "correct": ok, "tools": [t.tool for t in r.trace],
                      "tool_errors": sum(t.is_error for t in r.trace), "stop_reason": r.stop_reason,

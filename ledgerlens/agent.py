@@ -21,7 +21,9 @@ from ledgerlens.taxonomy import CATEGORIES, DESCRIPTIONS
 DEFAULT_AGENT_MODEL = "claude-opus-5-5"
 MAX_TOOL_ROUNDS = 8
 
-_CAT = {"type": ["string", "null"], "enum": [*CATEGORIES, None],
+# Optional enums are anyOf[enum, null]: the API's strict schema validator rejects an enum
+# combined with a union type like ["string", "null"].
+_CAT = {"anyOf": [{"type": "string", "enum": list(CATEGORIES)}, {"type": "null"}],
         "description": "Category filter, or null for all categories."}
 _DATE = {"type": ["string", "null"], "description": "ISO date YYYY-MM-DD (inclusive), or null for no bound."}
 
@@ -46,7 +48,7 @@ TOOLS = [
           "to `limit` rows.",
           {"query": {"type": ["string", "null"]}, "category": _CAT, "start_date": _DATE, "end_date": _DATE,
            "min_amount": {"type": ["number", "null"]}, "max_amount": {"type": ["number", "null"]},
-           "direction": {"type": ["string", "null"], "enum": ["in", "out", None]},
+           "direction": {"anyOf": [{"type": "string", "enum": ["in", "out"]}, {"type": "null"}]},
            "sort": {"type": "string", "enum": ["date", "amount"]},
            "limit": {"type": "integer", "description": "1-100"}}),
     _tool("list_recurring", "Recurring charges per merchant, split into subscriptions and bills (utilities, "
