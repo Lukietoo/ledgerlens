@@ -54,7 +54,8 @@ def main() -> int:
             print(f"checksum mismatch: expected {expected}, got {got}; refusing to install", file=sys.stderr)
             return 1
         tmp_path.replace(TARGET)
-        print(f"installed {TARGET.relative_to(ROOT)} (sha256 {got[:12]}…)")
+        shown = TARGET.relative_to(ROOT) if TARGET.is_relative_to(ROOT) else TARGET
+        print(f"installed {shown} (sha256 {got[:12]}…)")
         return 0
     finally:
         tmp_path.unlink(missing_ok=True)
