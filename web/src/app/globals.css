@@ -1,0 +1,74 @@
+@import "tailwindcss";
+
+/* Ledger-book palette: paper, ink, green for money in, red ink for money out.
+   Amber means exactly one thing: "resolved by the LLM". */
+:root {
+  --paper: #eef2ec;
+  --surface: #f8faf7;
+  --ink: #17213a;
+  --ink-soft: #4b5568;
+  --ink-faint: #7b8494;
+  --rule: #cbd5cc;
+  --green: #1e6b52;
+  --green-soft: #d7e8de;
+  --red: #a93b3b;
+  --amber: #b7791f;
+  --amber-soft: #f5e6c8;
+}
+
+@theme inline {
+  --color-paper: var(--paper);
+  --color-surface: var(--surface);
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-ink-faint: var(--ink-faint);
+  --color-rule: var(--rule);
+  --color-green: var(--green);
+  --color-green-soft: var(--green-soft);
+  --color-red: var(--red);
+  --color-amber: var(--amber);
+  --color-amber-soft: var(--amber-soft);
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
+}
+
+html {
+  background: var(--paper);
+  color: var(--ink);
+}
+
+body {
+  font-family: var(--font-sans), system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+.num {
+  font-variant-numeric: tabular-nums;
+}
+
+/* raw bank descriptors are fixed-width fields: the mono face is information, not decoration */
+.raw {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 12.5px;
+  letter-spacing: -0.01em;
+}
+
+:focus-visible {
+  outline: 2px solid var(--green);
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+
+/* the one orchestrated moment: a statement line decoding into a merchant */
+@keyframes decode-in {
+  from { opacity: 0; transform: translateY(4px); filter: blur(3px); }
+  to { opacity: 1; transform: none; filter: none; }
+}
+.decode-in {
+  animation: decode-in 520ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .decode-in { animation: none; }
+}
