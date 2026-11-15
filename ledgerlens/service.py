@@ -33,6 +33,7 @@ from pydantic import BaseModel, Field
 
 from ledgerlens.agent import DEFAULT_AGENT_MODEL, FinanceAgent
 from ledgerlens.finance import Ledger
+from ledgerlens.guards import DailyBudget, RateLimiter, client_id
 from ledgerlens.llm import DEFAULT_MODEL, LLMClassifier
 from ledgerlens.normalize import canon
 from ledgerlens.pipeline import DEFAULT_LLM_THRESHOLD, Enricher, RoutingPolicy, apply_llm_fallback
@@ -93,6 +94,11 @@ async def lifespan(app: FastAPI):
     app.state.threshold = float(os.environ.get("LEDGERLENS_LLM_THRESHOLD", DEFAULT_LLM_THRESHOLD))
     app.state.datasets = DatasetStore()
     app.state.agent_client = None
+    # public-deploy guards (see guards.py); generous defaults for local use
+    app.state.limits = {name: RateLimiter(int(os.environ.get(f"LEDGERLENS_{name.upper()}_PER_MIN", default)))
+                        for name, default in (("chat", 8), ("upload", 5), ("demo", 20))}
+    app.state.budget = DailyBudget(float(os.environ.get("LEDGERLENS_DAILY_LLM_BUDGET_USD", "2.00")))
+    app.state.allow_uploads = os.environ.get("LEDGERLENS_ALLOW_UPLOADS", "1") != "0"
     yield
 
 
@@ -103,7 +109,8 @@ app = FastAPI(title="Ledgerlens", version="0.4.0", lifespan=lifespan)
 def healthz(request: Request) -> dict:
     s = request.app.state
     return {"ok": True, "llm_fallback_available": s.llm is not None, "llm_threshold": s.threshold,
-            "directory_merchants": len(s.enricher.resolver.merchants)}
+            "directory_merchants": len(s.enricher.resolver.merchants), "uploads_enabled": s.allow_uploads,
+            "llm_spent_today_usd": s.budget.spent_today, "llm_daily_budget_usd": s.budget.limit}
 
 
 @app.post("/v1/enrich", response_model=EnrichResponse)
@@ -172,11 +179,22 @@ class DatasetStore:
 
 def _enrich_ledger(s, raw: pd.DataFrame) -> Ledger:
     out = s.enricher.enrich(raw[["description", "amount", "date"]])
-    if s.llm is not None:
+    if s.llm is not None and _within_budget(s):
+        before = s.llm.usage.cost_usd()
         out = apply_llm_fallback(out, s.llm, RoutingPolicy(threshold=s.threshold))
+        s.budget.spend(s.llm.usage.cost_usd() - before)
     else:
         out["source"] = "model"
     return Ledger(pd.concat([out, raw[["date"]].reset_index(drop=True)], axis=1))
+
+
+def _within_budget(s) -> bool:
+    """LLM fallback during enrichment is optional: past the daily cap, serve model-only instead of failing."""
+    try:
+        s.budget.check()
+        return True
+    except HTTPException:
+        return False
 
 
 def _demo_frame() -> pd.DataFrame:
@@ -205,6 +223,7 @@ def _info(key: str, ledger: Ledger, s) -> DatasetInfo:
 @app.post("/v1/datasets/demo", response_model=DatasetInfo)
 def create_demo(request: Request) -> DatasetInfo:
     s = request.app.state
+    s.limits["demo"].check(client_id(request))
     if not hasattr(s, "datasets"):
         s.datasets = DatasetStore()
     ledger = _enrich_ledger(s, _demo_frame())
@@ -214,6 +233,9 @@ def create_demo(request: Request) -> DatasetInfo:
 @app.post("/v1/datasets", response_model=DatasetInfo)
 async def upload_statement(request: Request, file: UploadFile) -> DatasetInfo:
     s = request.app.state
+    if not s.allow_uploads:
+        raise HTTPException(403, "uploads are turned off on this demo server; try the demo account, or run Ledgerlens locally")
+    s.limits["upload"].check(client_id(request))
     if not hasattr(s, "datasets"):
         s.datasets = DatasetStore()
     body = await file.read(MAX_UPLOAD_BYTES + 1)
@@ -291,6 +313,9 @@ def chat(dataset_id: str, req: ChatRequest, request: Request) -> dict:
     import anthropic
 
     ledger = _ledger(request, dataset_id)
+    s = request.app.state
+    s.limits["chat"].check(client_id(request))
+    s.budget.check()
     if req.messages[-1].role != "user":
         raise HTTPException(422, "the last message must be from the user")
     agent = FinanceAgent(_agent_client(request), ledger,
@@ -311,6 +336,7 @@ def chat(dataset_id: str, req: ChatRequest, request: Request) -> dict:
     except anthropic.APIStatusError as e:
         log.warning("agent API error %s (request id %s)", e.status_code, getattr(e, "request_id", None))
         raise HTTPException(502, f"model provider error ({e.status_code})") from e
+    s.budget.spend(r.cost_usd())
     return {"reply": r.reply, "stop_reason": r.stop_reason, "model": r.model,
             "trace": [t.__dict__ for t in r.trace], "seconds": r.seconds,
             "usage": {"input_tokens": r.input_tokens, "output_tokens": r.output_tokens,

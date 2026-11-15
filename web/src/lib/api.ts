@@ -90,6 +90,7 @@ async function call<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export const api = {
+  health: () => call<{ ok: boolean; uploads_enabled?: boolean }>("/healthz"),
   demo: () => call<DatasetInfo>("/v1/datasets/demo", { method: "POST" }),
   upload: (file: File) => {
     const body = new FormData();

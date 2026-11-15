@@ -12,3 +12,6 @@ data/real/
 *.pem
 *.key
 models/
+# packaging artifacts (pip install .)
+build/
+dist/

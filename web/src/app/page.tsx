@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Chat } from "@/components/Chat";
 import { Decode } from "@/components/Decode";
 import { Recurring } from "@/components/Recurring";
@@ -23,6 +23,11 @@ export default function Home() {
   const [loading, setLoading] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  // public demo servers can turn statement uploads off; hide the button rather than fail on click
+  const [uploadsEnabled, setUploadsEnabled] = useState(true);
+  useEffect(() => {
+    api.health().then((h) => setUploadsEnabled(h.uploads_enabled !== false)).catch(() => {});
+  }, []);
 
   async function load(start: () => Promise<DatasetInfo>, label: string) {
     setLoading(label);
@@ -46,10 +51,12 @@ export default function Home() {
       <header className="flex flex-wrap items-center justify-between gap-4 py-6">
         <p className="text-[17px] font-semibold tracking-[-0.01em]">Ledgerlens</p>
         <div className="flex flex-wrap gap-2">
-          <button onClick={() => fileRef.current?.click()} disabled={!!loading}
-                  className="rounded-md border border-ink/20 px-3.5 py-2 text-sm font-medium hover:border-ink/50 disabled:opacity-50">
-            {loading === "upload" ? "Reading your statement…" : "Upload a bank CSV"}
-          </button>
+          {uploadsEnabled && (
+            <button onClick={() => fileRef.current?.click()} disabled={!!loading}
+                    className="rounded-md border border-ink/20 px-3.5 py-2 text-sm font-medium hover:border-ink/50 disabled:opacity-50">
+              {loading === "upload" ? "Reading your statement…" : "Upload a bank CSV"}
+            </button>
+          )}
           <button onClick={() => load(api.demo, "demo")} disabled={!!loading}
                   className="rounded-md bg-ink px-3.5 py-2 text-sm font-medium text-surface hover:bg-ink/90 disabled:opacity-50">
             {loading === "demo" ? "Loading a year of transactions…" : info ? "Reload demo" : "Try it on a demo account"}
