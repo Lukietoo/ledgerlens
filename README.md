@@ -392,9 +392,12 @@ Steps:
    `scripts/release_model.sh model-vN` (needs `gh auth login`; commit the updated `model.sha256`). The current release
    is [model-v2](https://github.com/Lukietoo/ledgerlens/releases/tag/model-v2); a deploy pointing at an older
    release fails its checksum check and refuses to install, by design.
-2. In Render: **New → Blueprint**, pick the repo. When prompted, paste `ANTHROPIC_API_KEY` and the
-   `LEDGERLENS_MODEL_URL` that the release script printed.
-3. Open the `ledgerlens-web` URL and click **Try it on a demo account**.
+2. In Render: **New → Blueprint**, pick the repo. When prompted, paste `ANTHROPIC_API_KEY`, the
+   `LEDGERLENS_MODEL_URL` that the release script printed, and `LEDGERLENS_API`: the API service's public URL,
+   normally `https://ledgerlens-api.onrender.com` (check it on the `ledgerlens-api` page; Render adds a suffix if the
+   name is taken). It has to be the public URL: free web services can't receive private-network traffic.
+3. Open the `ledgerlens-web` URL and click **Try it on a demo account**. If the API was asleep, the first click shows
+   "The API is waking up"; it's ready about 30–60 s later.
 
 Free Render services sleep when idle; the first request after a nap takes about 30–60 s.
 

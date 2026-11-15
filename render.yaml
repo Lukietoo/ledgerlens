@@ -39,8 +39,8 @@ services:
     envVars:
       - key: NODE_VERSION
         value: 20.20.0
-      - key: LEDGERLENS_API             # Next proxies /api/* here; resolved at build time
-        fromService:
-          type: web
-          name: ledgerlens-api
-          property: host
+      # The API's PUBLIC URL, e.g. https://ledgerlens-api.onrender.com (copy it from the API service's
+      # page). Not fromService/host: that is a private-network hostname, and free web services can't
+      # receive private-network traffic. Read per request by web/src/app/api/[...path]/route.ts.
+      - key: LEDGERLENS_API
+        sync: false
