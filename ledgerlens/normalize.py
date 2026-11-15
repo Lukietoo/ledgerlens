@@ -23,7 +23,7 @@ US_STATES = frozenset(
 # Deliberately NOT the same list the synthetic generator draws from, so the
 # normalizer can't "cheat" on synthetic data.
 CITY_GAZETTEER = frozenset(
-    c.upper()
+    c.strip().upper()  # strip: entries at line breaks carry indentation ("    NEW YORK" never matched)
     for c in """
     NEW YORK|LOS ANGELES|CHICAGO|HOUSTON|PHOENIX|PHILADELPHIA|SAN ANTONIO|SAN DIEGO|DALLAS
     |SAN JOSE|AUSTIN|JACKSONVILLE|FORT WORTH|COLUMBUS|CHARLOTTE|SAN FRANCISCO|INDIANAPOLIS

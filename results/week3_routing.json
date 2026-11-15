@@ -1,277 +1,283 @@
 {
   "cold": {
-    "accuracy": 0.8159870776215838,
+    "accuracy": 0.8055967868680695,
     "curve": [
       {
         "threshold": 0.0,
         "routed_to_llm": 0.0,
-        "model_acc_on_kept": 0.8159870776215838,
+        "model_acc_on_kept": 0.8055967868680695,
         "model_acc_on_routed": null,
-        "hybrid_upper_bound": 0.8159870776215838
+        "hybrid_upper_bound": 0.8055967868680695
       },
       {
         "threshold": 0.5,
-        "routed_to_llm": 0.055793241945341854,
-        "model_acc_on_kept": 0.8371555391159607,
-        "model_acc_on_routed": 0.45774647887323944,
-        "hybrid_upper_bound": 0.8462411595215228
+        "routed_to_llm": 0.06889024709683056,
+        "model_acc_on_kept": 0.833927231807952,
+        "model_acc_on_routed": 0.42268694550063374,
+        "hybrid_upper_bound": 0.8453680258447568
       },
       {
         "threshold": 0.6,
-        "routed_to_llm": 0.09508425739980786,
-        "model_acc_on_kept": 0.8498166730991895,
-        "model_acc_on_routed": 0.49403122130394855,
-        "hybrid_upper_bound": 0.8640967432113856
+        "routed_to_llm": 0.13625251025932072,
+        "model_acc_on_kept": 0.8478140005054334,
+        "model_acc_on_routed": 0.5379685998077539,
+        "hybrid_upper_bound": 0.8685497249628918
       },
       {
         "threshold": 0.7,
-        "routed_to_llm": 0.14760324805727754,
-        "model_acc_on_kept": 0.8634571062740077,
-        "model_acc_on_routed": 0.5418515232179828,
-        "hybrid_upper_bound": 0.8836112808871038
+        "routed_to_llm": 0.18161180476730987,
+        "model_acc_on_kept": 0.8711191720900459,
+        "model_acc_on_routed": 0.5103365384615385,
+        "hybrid_upper_bound": 0.8945254518466778
       },
       {
         "threshold": 0.8,
-        "routed_to_llm": 0.21548939142582735,
-        "model_acc_on_kept": 0.8769616026711186,
-        "model_acc_on_routed": 0.5940032414910859,
-        "hybrid_upper_bound": 0.9034750720335283
+        "routed_to_llm": 0.22797520300357987,
+        "model_acc_on_kept": 0.8865641257634019,
+        "model_acc_on_routed": 0.5314055917273075,
+        "hybrid_upper_bound": 0.9124246922203789
       },
       {
         "threshold": 0.85,
-        "routed_to_llm": 0.2539945865712041,
-        "model_acc_on_kept": 0.8829588014981273,
-        "model_acc_on_routed": 0.6192849776555517,
-        "hybrid_upper_bound": 0.9126866323234087
+        "routed_to_llm": 0.25674495765301664,
+        "model_acc_on_kept": 0.8908663729809104,
+        "model_acc_on_routed": 0.5587485121577963,
+        "hybrid_upper_bound": 0.9188858814284467
       },
       {
         "threshold": 0.9,
-        "routed_to_llm": 0.29385313891556797,
-        "model_acc_on_kept": 0.8915610510046368,
-        "model_acc_on_routed": 0.6343782498885753,
-        "hybrid_upper_bound": 0.9234261765476295
+        "routed_to_llm": 0.30223522221252075,
+        "model_acc_on_kept": 0.8995808046048926,
+        "model_acc_on_routed": 0.5886176513072368,
+        "hybrid_upper_bound": 0.9299310224395355
       },
       {
         "threshold": 0.95,
-        "routed_to_llm": 0.3784161355103466,
-        "model_acc_on_kept": 0.9000561876668072,
-        "model_acc_on_routed": 0.6778957083525612,
-        "hybrid_upper_bound": 0.9378765388981053
+        "routed_to_llm": 0.43202654326377365,
+        "model_acc_on_kept": 0.9338201383551115,
+        "model_acc_on_routed": 0.6370250606305577,
+        "hybrid_upper_bound": 0.9624115952152275
       },
       {
         "threshold": 0.98,
-        "routed_to_llm": 0.6106696935300795,
-        "model_acc_on_kept": 0.9581744785826418,
-        "model_acc_on_routed": 0.7253360022876751,
-        "hybrid_upper_bound": 0.9837160569283158
+        "routed_to_llm": 0.6600017462673535,
+        "model_acc_on_kept": 0.9902413970210581,
+        "model_acc_on_routed": 0.7104775763989946,
+        "hybrid_upper_bound": 0.9966820920282895
       }
     ],
     "calibration": [
       {
         "bin": "0.1\u20130.2",
-        "n": 10,
-        "mean_conf": 0.19880000000000003,
+        "n": 26,
+        "mean_conf": 0.18138076923076923,
         "accuracy": 0.0
       },
       {
         "bin": "0.2\u20130.3",
-        "n": 80,
-        "mean_conf": 0.2725575,
-        "accuracy": 0.3875
+        "n": 65,
+        "mean_conf": 0.26002307692307697,
+        "accuracy": 0.36923076923076925
       },
       {
         "bin": "0.3\u20130.4",
-        "n": 413,
-        "mean_conf": 0.3513360774818402,
-        "accuracy": 0.3946731234866828
+        "n": 544,
+        "mean_conf": 0.36341525735294117,
+        "accuracy": 0.3492647058823529
       },
       {
         "bin": "0.4\u20130.5",
-        "n": 775,
-        "mean_conf": 0.45398851612903224,
-        "accuracy": 0.5045161290322581
+        "n": 943,
+        "mean_conf": 0.4519284199363733,
+        "accuracy": 0.48038176033934255
       },
       {
         "bin": "0.5\u20130.6",
-        "n": 903,
-        "mean_conf": 0.5479953488372092,
-        "accuracy": 0.5448504983388704
+        "n": 1549,
+        "mean_conf": 0.5502641058747579,
+        "accuracy": 0.6533247256294383
       },
       {
         "bin": "0.6\u20130.7",
-        "n": 1201,
-        "mean_conf": 0.656190757701915,
-        "accuracy": 0.6286427976686095
+        "n": 1035,
+        "mean_conf": 0.6478951690821256,
+        "accuracy": 0.42995169082125606
       },
       {
         "bin": "0.7\u20130.8",
-        "n": 1554,
-        "mean_conf": 0.7490758687258688,
-        "accuracy": 0.7078507078507078
+        "n": 1060,
+        "mean_conf": 0.752222641509434,
+        "accuracy": 0.6141509433962264
       },
       {
         "bin": "0.8\u20130.9",
-        "n": 1795,
-        "mean_conf": 0.8534115877437325,
-        "accuracy": 0.7454038997214485
+        "n": 1701,
+        "mean_conf": 0.8580121105232217,
+        "accuracy": 0.7642563198118754
       },
       {
         "bin": "0.9\u20131.0",
-        "n": 16175,
-        "mean_conf": 0.9765526676970634,
-        "accuracy": 0.8915610510046368
+        "n": 15983,
+        "mean_conf": 0.9717109866733404,
+        "accuracy": 0.8995808046048926
       }
     ],
-    "ece": 0.07582478389941501,
+    "ece": 0.0825219374836288,
     "policies": {
       "confidence < 0.8 (week 3)": {
-        "routed_rows": 0.2154893914258273,
-        "llm_calls_per_txn_cached": 0.01191827468785471,
-        "unique_keys_routed": 273,
+        "routed_rows": 0.22797520300357985,
+        "llm_calls_per_txn_cached": 0.012442154893914259,
+        "unique_keys_routed": 285,
         "model_acc_unknown_confident": null,
         "share_unknown_confident": 0.0
       },
       "confidence < 0.8 OR merchant not in directory": {
-        "routed_rows": 0.9584388369859426,
-        "llm_calls_per_txn_cached": 0.04658168165546145,
-        "unique_keys_routed": 1067,
-        "model_acc_unknown_confident": 0.8727229991773416,
-        "share_unknown_confident": 0.7429494455601152
+        "routed_rows": 0.9581332401990745,
+        "llm_calls_per_txn_cached": 0.04435519077970837,
+        "unique_keys_routed": 1016,
+        "model_acc_unknown_confident": 0.8826905829596412,
+        "share_unknown_confident": 0.7301580371954947
       }
     }
   },
   "warm": {
-    "accuracy": 0.8540557059285777,
+    "accuracy": 0.8511743647952501,
     "curve": [
       {
         "threshold": 0.0,
         "routed_to_llm": 0.0,
-        "model_acc_on_kept": 0.8540557059285777,
+        "model_acc_on_kept": 0.8511743647952501,
         "model_acc_on_routed": null,
-        "hybrid_upper_bound": 0.8540557059285777
+        "hybrid_upper_bound": 0.8511743647952501
       },
       {
         "threshold": 0.5,
-        "routed_to_llm": 0.03191303588579408,
-        "model_acc_on_kept": 0.8733258173618941,
-        "model_acc_on_routed": 0.2694938440492476,
-        "hybrid_upper_bound": 0.8773683750982275
+        "routed_to_llm": 0.039683925609010795,
+        "model_acc_on_kept": 0.8754830204118743,
+        "model_acc_on_routed": 0.2629262926292629,
+        "hybrid_upper_bound": 0.8804243429669082
       },
       {
         "threshold": 0.6,
-        "routed_to_llm": 0.05138391687767396,
-        "model_acc_on_kept": 0.8836117630815961,
-        "model_acc_on_routed": 0.308411214953271,
-        "hybrid_upper_bound": 0.8895922465729503
+        "routed_to_llm": 0.06871562036147738,
+        "model_acc_on_kept": 0.8896024751546971,
+        "model_acc_on_routed": 0.3303684879288437,
+        "hybrid_upper_bound": 0.8971885095608138
       },
       {
         "threshold": 0.7,
-        "routed_to_llm": 0.07993538810791934,
-        "model_acc_on_kept": 0.8975088967971531,
-        "model_acc_on_routed": 0.3539049699617695,
-        "hybrid_upper_bound": 0.9057015629092814
+        "routed_to_llm": 0.1126779009866411,
+        "model_acc_on_kept": 0.9190159901599017,
+        "model_acc_on_routed": 0.3169314219294847,
+        "hybrid_upper_bound": 0.9281410984021654
       },
       {
         "threshold": 0.8,
-        "routed_to_llm": 0.13869728455426522,
-        "model_acc_on_kept": 0.9204217142277865,
-        "model_acc_on_routed": 0.44192634560906513,
-        "hybrid_upper_bound": 0.9314590063738758
+        "routed_to_llm": 0.15720771850170256,
+        "model_acc_on_kept": 0.9272209272209272,
+        "model_acc_on_routed": 0.44348792002221604,
+        "hybrid_upper_bound": 0.9386623592071947
       },
       {
         "threshold": 0.85,
-        "routed_to_llm": 0.1628394307168427,
-        "model_acc_on_kept": 0.9277743012098456,
-        "model_acc_on_routed": 0.47506702412868634,
-        "hybrid_upper_bound": 0.9395354928839605
+        "routed_to_llm": 0.1737099449925784,
+        "model_acc_on_kept": 0.9321075711945898,
+        "model_acc_on_routed": 0.4661975370696155,
+        "hybrid_upper_bound": 0.9439011612677901
       },
       {
         "threshold": 0.9,
-        "routed_to_llm": 0.20064611892080675,
-        "model_acc_on_kept": 0.9316220644456581,
-        "model_acc_on_routed": 0.5450391644908616,
-        "hybrid_upper_bound": 0.9453418318344539
+        "routed_to_llm": 0.21365581070461892,
+        "model_acc_on_kept": 0.9427048634243838,
+        "model_acc_on_routed": 0.5143032284429914,
+        "hybrid_upper_bound": 0.9549463022788789
       },
       {
         "threshold": 0.95,
-        "routed_to_llm": 0.2759102418580285,
-        "model_acc_on_kept": 0.9492945857952491,
-        "model_acc_on_routed": 0.6041139240506329,
-        "hybrid_upper_bound": 0.9632847288919933
+        "routed_to_llm": 0.32773072557408545,
+        "model_acc_on_kept": 0.9745438015455549,
+        "model_acc_on_routed": 0.598108432130012,
+        "hybrid_upper_bound": 0.9828865799353881
       },
       {
         "threshold": 0.98,
-        "routed_to_llm": 0.4502750371081813,
-        "model_acc_on_kept": 0.9967439644218552,
-        "model_acc_on_routed": 0.6798526274966066,
-        "hybrid_upper_bound": 0.9982100759626299
+        "routed_to_llm": 0.5134899153060333,
+        "model_acc_on_kept": 0.9978463747307968,
+        "model_acc_on_routed": 0.712208808025846,
+        "hybrid_upper_bound": 0.9989522395878809
       }
     ],
     "calibration": [
       {
-        "bin": "0.2\u20130.3",
-        "n": 19,
-        "mean_conf": 0.2765526315789474,
+        "bin": "0.1\u20130.2",
+        "n": 14,
+        "mean_conf": 0.17052857142857145,
         "accuracy": 0.0
       },
       {
+        "bin": "0.2\u20130.3",
+        "n": 44,
+        "mean_conf": 0.2887022727272727,
+        "accuracy": 0.045454545454545456
+      },
+      {
         "bin": "0.3\u20130.4",
-        "n": 160,
-        "mean_conf": 0.3582875,
-        "accuracy": 0.2125
+        "n": 374,
+        "mean_conf": 0.36198315508021395,
+        "accuracy": 0.15775401069518716
       },
       {
         "bin": "0.4\u20130.5",
-        "n": 552,
-        "mean_conf": 0.45536358695652174,
-        "accuracy": 0.29528985507246375
+        "n": 477,
+        "mean_conf": 0.45954528301886793,
+        "accuracy": 0.3731656184486373
       },
       {
         "bin": "0.5\u20130.6",
-        "n": 447,
-        "mean_conf": 0.5523946308724832,
-        "accuracy": 0.37360178970917224
+        "n": 665,
+        "mean_conf": 0.5550299248120302,
+        "accuracy": 0.42255639097744363
       },
       {
         "bin": "0.6\u20130.7",
-        "n": 653,
-        "mean_conf": 0.6582805513016846,
-        "accuracy": 0.4349157733537519
+        "n": 1008,
+        "mean_conf": 0.6579337301587302,
+        "accuracy": 0.29662698412698413
       },
       {
         "bin": "0.7\u20130.8",
-        "n": 1346,
-        "mean_conf": 0.7523848439821694,
-        "accuracy": 0.5616641901931649
+        "n": 1019,
+        "mean_conf": 0.7583542688910696,
+        "accuracy": 0.7634936211972522
       },
       {
         "bin": "0.8\u20130.9",
-        "n": 1419,
-        "mean_conf": 0.8575109936575053,
-        "accuracy": 0.7758985200845666
+        "n": 1293,
+        "mean_conf": 0.8638247486465584,
+        "accuracy": 0.711523588553751
       },
       {
         "bin": "0.9\u20131.0",
-        "n": 18310,
-        "mean_conf": 0.980521638448935,
-        "accuracy": 0.9316220644456581
+        "n": 18012,
+        "mean_conf": 0.9763189373750832,
+        "accuracy": 0.9427048634243838
       }
     ],
-    "ece": 0.07031293547542132,
+    "ece": 0.060708386448965306,
     "policies": {
       "confidence < 0.8 (week 3)": {
-        "routed_rows": 0.13869728455426525,
-        "llm_calls_per_txn_cached": 0.01052126080502925,
-        "unique_keys_routed": 241,
+        "routed_rows": 0.15720771850170262,
+        "llm_calls_per_txn_cached": 0.010695887540382433,
+        "unique_keys_routed": 245,
         "model_acc_unknown_confident": null,
         "share_unknown_confident": 0.0
       },
       "confidence < 0.8 OR merchant not in directory": {
-        "routed_rows": 0.34637212957303765,
-        "llm_calls_per_txn_cached": 0.02366192264035624,
-        "unique_keys_routed": 542,
-        "model_acc_unknown_confident": 0.9812907294513349,
-        "share_unknown_confident": 0.20767484501877237
+        "routed_rows": 0.35911988125381994,
+        "llm_calls_per_txn_cached": 0.022570505544398847,
+        "unique_keys_routed": 517,
+        "model_acc_unknown_confident": 0.9868108108108108,
+        "share_unknown_confident": 0.20191216275211735
       }
     }
   }

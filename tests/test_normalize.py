@@ -1,6 +1,6 @@
 import pytest
 
-from ledgerlens.normalize import canon, display_name, normalize
+from ledgerlens.normalize import CITY_GAZETTEER, canon, display_name, normalize
 
 
 @pytest.mark.parametrize(
@@ -29,6 +29,22 @@ def test_normalize(raw, clean, processor):
     n = normalize(raw)
     assert n.clean == clean
     assert n.processor == processor
+
+
+def test_gazetteer_entries_are_clean():
+    # regression: entries at line breaks kept their indentation, so NEW YORK, DALLAS,
+    # MINNEAPOLIS... were never stripped and "NEW YORK" fuzzy-matched "New York Times"
+    assert all(c == c.strip() and "  " not in c for c in CITY_GAZETTEER)
+    assert {"NEW YORK", "DALLAS", "MINNEAPOLIS", "SUNNYVALE", "ANAHEIM"} <= CITY_GAZETTEER
+
+
+@pytest.mark.parametrize("raw, clean", [
+    ("Leo S Pilates New York Ny", "LEO S PILATES"),  # Title Case bank style
+    ("76 - New York Ny", "76"),
+    ("STARBUCKS #123 DALLAS TX", "STARBUCKS"),
+])
+def test_line_boundary_cities_are_stripped(raw, clean):
+    assert normalize(raw).clean == clean
 
 
 def test_unknown_city_is_kept_but_state_dropped():

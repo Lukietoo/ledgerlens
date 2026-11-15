@@ -5,8 +5,8 @@
 | transactions evaluated | 22,906 |
 | category accuracy | 53.5% |
 | category macro-F1 | 0.583 |
-| rule coverage (non-UNKNOWN) | 60.8% |
-| merchant exact match (normalizer only) | 45.5% |
+| coverage (non-UNKNOWN) | 60.8% |
+| merchant exact match | 46.8% |
 | recurring P / R / F1 | 0.977 / 0.888 / 0.930 |
 | accuracy on chain merchants (n=16,677) | 50.5% |
 | accuracy on local merchants (n=4,293) | 44.2% |

@@ -4,21 +4,21 @@
   "vcpu_hour_usd_assumption": 0.04,
   "model_only_per_1m": 0.0038660870500558855,
   "routed_share": {
-    "cold": 0.21548939142582735,
-    "warm": 0.13869728455426522
+    "cold": 0.22797520300357987,
+    "warm": 0.15720771850170256
   },
   "hybrid_ceiling": {
-    "cold": 0.9034750720335283,
-    "warm": 0.9314590063738758
+    "cold": 0.9124246922203789,
+    "warm": 0.9386623592071947
   },
   "cached_llm_calls_per_txn": {
     "cold": {
-      "confidence < 0.8 (week 3)": 0.01191827468785471,
-      "confidence < 0.8 OR merchant not in directory": 0.04658168165546145
+      "confidence < 0.8 (week 3)": 0.012442154893914259,
+      "confidence < 0.8 OR merchant not in directory": 0.04435519077970837
     },
     "warm": {
-      "confidence < 0.8 (week 3)": 0.01052126080502925,
-      "confidence < 0.8 OR merchant not in directory": 0.02366192264035624
+      "confidence < 0.8 (week 3)": 0.010695887540382433,
+      "confidence < 0.8 OR merchant not in directory": 0.022570505544398847
     }
   },
   "threshold": 0.8,
@@ -29,10 +29,10 @@
       "tokens_out": 60,
       "measured": false,
       "llm_only_per_1m": 1381.48,
-      "hybrid_cold_per_1m": 297.698150554002,
-      "hybrid_warm_per_1m": 191.61139075307636,
-      "cached_new_policy_cold_per_1m": 64.35552766043693,
-      "cached_new_policy_warm_per_1m": 32.692338976249395
+      "hybrid_cold_per_1m": 314.9470495324355,
+      "hybrid_warm_per_1m": 217.18318504278213,
+      "cached_new_policy_cold_per_1m": 61.279675045401575,
+      "cached_new_policy_warm_per_1m": 31.184568086526177
     },
     {
       "model": "claude-sonnet-5-5",
@@ -40,10 +40,10 @@
       "tokens_out": 60,
       "measured": false,
       "llm_only_per_1m": 690.74,
-      "hybrid_cold_per_1m": 148.85100832052603,
-      "hybrid_warm_per_1m": 95.80762842006321,
-      "cached_new_policy_cold_per_1m": 32.179696873743495,
-      "cached_new_policy_warm_per_1m": 16.348102531649726
+      "hybrid_cold_per_1m": 157.4754578097428,
+      "hybrid_warm_per_1m": 108.59352556491609,
+      "cached_new_policy_cold_per_1m": 30.641770566225816,
+      "cached_new_policy_warm_per_1m": 15.594217086788117
     },
     {
       "model": "claude-haiku-5-5",
@@ -51,10 +51,10 @@
       "tokens_out": 31.37,
       "measured": true,
       "llm_only_per_1m": 25.94775,
-      "hybrid_cold_per_1m": 5.595330943419567,
-      "hybrid_warm_per_1m": 3.6027485523429914,
-      "cached_new_policy_cold_per_1m": 1.2125559172255558,
-      "cached_new_policy_warm_per_1m": 0.6178397402413595
+      "hybrid_cold_per_1m": 5.919309660786195,
+      "hybrid_warm_per_1m": 4.083052664802608,
+      "cached_new_policy_cold_per_1m": 1.1547834886042339,
+      "cached_new_policy_warm_per_1m": 0.589519922289731
     }
   ]
 }
