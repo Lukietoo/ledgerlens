@@ -1,0 +1,296 @@
+[
+  {
+    "id": "q01",
+    "kind": "number",
+    "question": "How much did I spend on housing in December 2025?",
+    "answer": 1650.0,
+    "note": ""
+  },
+  {
+    "id": "q02",
+    "kind": "number",
+    "question": "How much did I spend on loans in March 2026?",
+    "answer": 582.06,
+    "note": ""
+  },
+  {
+    "id": "q03",
+    "kind": "number",
+    "question": "How much did I spend on shopping in June 2026?",
+    "answer": 990.27,
+    "note": ""
+  },
+  {
+    "id": "q04",
+    "kind": "number",
+    "question": "How much did I spend on dining in September 2026?",
+    "answer": 243.76,
+    "note": ""
+  },
+  {
+    "id": "q05",
+    "kind": "number",
+    "question": "How much did I spend on groceries in December 2025?",
+    "answer": 408.41,
+    "note": ""
+  },
+  {
+    "id": "q06",
+    "kind": "number",
+    "question": "How much did I spend on fitness in March 2026?",
+    "answer": 204.1,
+    "note": ""
+  },
+  {
+    "id": "q07",
+    "kind": "number",
+    "question": "How much did I spend on travel in June 2026?",
+    "answer": 434.44,
+    "note": ""
+  },
+  {
+    "id": "q08",
+    "kind": "number",
+    "question": "How much did I spend on education in September 2026?",
+    "answer": 123.48,
+    "note": ""
+  },
+  {
+    "id": "q09",
+    "kind": "number",
+    "question": "What was my total spending in December 2025, not counting transfers?",
+    "answer": 5324.54,
+    "note": ""
+  },
+  {
+    "id": "q10",
+    "kind": "number",
+    "question": "What was my total spending in March 2026, not counting transfers?",
+    "answer": 4097.92,
+    "note": ""
+  },
+  {
+    "id": "q11",
+    "kind": "number",
+    "question": "What was my total spending in June 2026, not counting transfers?",
+    "answer": 5123.17,
+    "note": ""
+  },
+  {
+    "id": "q12",
+    "kind": "number",
+    "question": "What was my total spending in September 2026, not counting transfers?",
+    "answer": 4805.34,
+    "note": ""
+  },
+  {
+    "id": "q13",
+    "kind": "number",
+    "question": "How much have I spent at Apple Store in total?",
+    "answer": 2950.44,
+    "note": ""
+  },
+  {
+    "id": "q14",
+    "kind": "number",
+    "question": "How much have I spent at Wayfair in total?",
+    "answer": 2901.7,
+    "note": ""
+  },
+  {
+    "id": "q15",
+    "kind": "number",
+    "question": "How much have I spent at New York Times in total?",
+    "answer": 2482.12,
+    "note": ""
+  },
+  {
+    "id": "q16",
+    "kind": "number",
+    "question": "How much have I spent at Hy Vee New York in total?",
+    "answer": 2187.61,
+    "note": ""
+  },
+  {
+    "id": "q17",
+    "kind": "number",
+    "question": "How much have I spent at Bay Club in total?",
+    "answer": 1913.88,
+    "note": ""
+  },
+  {
+    "id": "q18",
+    "kind": "number",
+    "question": "How much have I spent at Cal Central in total?",
+    "answer": 1135.96,
+    "note": ""
+  },
+  {
+    "id": "q19",
+    "kind": "count",
+    "question": "How many transactions do I have at New York Times?",
+    "answer": 80.0,
+    "note": ""
+  },
+  {
+    "id": "q20",
+    "kind": "count",
+    "question": "How many transactions do I have at Taco Bell?",
+    "answer": 50.0,
+    "note": ""
+  },
+  {
+    "id": "q21",
+    "kind": "count",
+    "question": "How many transactions do I have at Philz Coffee?",
+    "answer": 37.0,
+    "note": ""
+  },
+  {
+    "id": "q22",
+    "kind": "count",
+    "question": "How many transactions do I have at Hy Vee New York?",
+    "answer": 32.0,
+    "note": ""
+  },
+  {
+    "id": "q23",
+    "kind": "number",
+    "question": "On average, how much do I spend on housing per month?",
+    "answer": 1650.0,
+    "note": "average over full months"
+  },
+  {
+    "id": "q24",
+    "kind": "number",
+    "question": "On average, how much do I spend on loans per month?",
+    "answer": 600.05,
+    "note": "average over full months"
+  },
+  {
+    "id": "q25",
+    "kind": "number",
+    "question": "On average, how much do I spend on shopping per month?",
+    "answer": 593.03,
+    "note": "average over full months"
+  },
+  {
+    "id": "q26",
+    "kind": "number",
+    "question": "On average, how much do I spend on dining per month?",
+    "answer": 301.36,
+    "note": "average over full months"
+  },
+  {
+    "id": "q27",
+    "kind": "number",
+    "question": "How much income did I receive in January 2026?",
+    "answer": 11043.94,
+    "note": ""
+  },
+  {
+    "id": "q28",
+    "kind": "number",
+    "question": "How much income did I receive in May 2026?",
+    "answer": 7430.64,
+    "note": ""
+  },
+  {
+    "id": "q29",
+    "kind": "number",
+    "question": "How much income did I receive in September 2026?",
+    "answer": 7164.44,
+    "note": ""
+  },
+  {
+    "id": "q30",
+    "kind": "name",
+    "question": "What was my single biggest purchase in November 2025, not counting rent, loans or utility bills? Name the merchant.",
+    "answer": "Bay Club",
+    "note": "$159.49"
+  },
+  {
+    "id": "q31",
+    "kind": "name",
+    "question": "What was my single biggest purchase in February 2026, not counting rent, loans or utility bills? Name the merchant.",
+    "answer": "Wayfair",
+    "note": "$293.62"
+  },
+  {
+    "id": "q32",
+    "kind": "name",
+    "question": "What was my single biggest purchase in May 2026, not counting rent, loans or utility bills? Name the merchant.",
+    "answer": "Apple Store",
+    "note": "$420.90"
+  },
+  {
+    "id": "q33",
+    "kind": "name",
+    "question": "What was my single biggest purchase in August 2026, not counting rent, loans or utility bills? Name the merchant.",
+    "answer": "Cal Central",
+    "note": "$1062.99"
+  },
+  {
+    "id": "q34",
+    "kind": "month",
+    "question": "Which month did I spend the most on dining?",
+    "answer": "June",
+    "note": ""
+  },
+  {
+    "id": "q35",
+    "kind": "month",
+    "question": "Which month did I spend the most on shopping?",
+    "answer": "December",
+    "note": ""
+  },
+  {
+    "id": "q36",
+    "kind": "month",
+    "question": "Which month did I spend the most on groceries?",
+    "answer": "December",
+    "note": ""
+  },
+  {
+    "id": "q37",
+    "kind": "number",
+    "question": "How much do my subscriptions cost per month in total?",
+    "answer": 195.47,
+    "note": ""
+  },
+  {
+    "id": "q38",
+    "kind": "name",
+    "question": "What's my most expensive subscription?",
+    "answer": "Bay Club",
+    "note": ""
+  },
+  {
+    "id": "q39",
+    "kind": "count",
+    "question": "How many subscriptions do I have?",
+    "answer": 4.0,
+    "note": ""
+  },
+  {
+    "id": "q40",
+    "kind": "number",
+    "question": "How much is my rent each month?",
+    "answer": 1650.0,
+    "note": ""
+  },
+  {
+    "id": "q41",
+    "kind": "number",
+    "question": "Based on my recent months, how much should I expect to have left over next month?",
+    "answer": 2618.3,
+    "note": ""
+  },
+  {
+    "id": "q42",
+    "kind": "number",
+    "question": "What's my typical monthly income lately?",
+    "answer": 7223.52,
+    "note": ""
+  }
+]

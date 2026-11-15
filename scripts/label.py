@@ -22,61 +22,10 @@ from pathlib import Path
 
 from ledgerlens.baseline import categorize
 from ledgerlens.normalize import display_name, normalize
+from ledgerlens.statements import StatementError, read_export
 from ledgerlens.taxonomy import CATEGORIES, DESCRIPTIONS, UNKNOWN
 
 OUT_FIELDS = ["raw_description", "amount", "date", "merchant", "category", "source_file"]
-
-DESC_COLS = ["description", "transaction description", "original description", "payee", "name",
-             "merchant", "details", "memo", "transaction"]
-AMOUNT_COLS = ["amount", "transaction amount", "amount (usd)"]
-DEBIT_COLS = ["debit", "withdrawals", "withdrawal"]
-CREDIT_COLS = ["credit", "deposits", "deposit"]
-DATE_COLS = ["date", "transaction date", "posting date", "posted date", "trans. date"]
-
-
-def _find(header: list[str], candidates: list[str]) -> str | None:
-    low = {h.strip().lower(): h for h in header}
-    for c in candidates:
-        if c in low:
-            return low[c]
-    return None
-
-
-def _money(s: str) -> float | None:
-    s = (s or "").replace("$", "").replace(",", "").strip()
-    if not s:
-        return None
-    neg = s.startswith("(") and s.endswith(")")
-    try:
-        v = float(s.strip("()"))
-    except ValueError:
-        return None
-    return -v if neg else v
-
-
-def read_export(path: Path) -> list[dict]:
-    with path.open(newline="", encoding="utf-8-sig") as f:
-        reader = csv.DictReader(f)
-        header = reader.fieldnames or []
-        dcol = _find(header, DESC_COLS)
-        if not dcol:
-            raise SystemExit(f"{path}: couldn't find a description column in {header}")
-        acol, debit, credit = _find(header, AMOUNT_COLS), _find(header, DEBIT_COLS), _find(header, CREDIT_COLS)
-        datecol = _find(header, DATE_COLS)
-        rows = []
-        for r in reader:
-            desc = (r.get(dcol) or "").strip()
-            if not desc:
-                continue
-            if acol:
-                amt = _money(r.get(acol, ""))
-            else:
-                d, c = _money(r.get(debit, "")) if debit else None, _money(r.get(credit, "")) if credit else None
-                amt = (c or 0.0) - abs(d or 0.0) if (d is not None or c is not None) else None
-            rows.append({"raw_description": desc, "amount": "" if amt is None else f"{amt:.2f}",
-                         "date": (r.get(datecol) or "").strip() if datecol else "", "source_file": path.name})
-        return rows
-
 
 def load_done(out: Path) -> list[dict]:
     if not out.exists():
@@ -110,7 +59,11 @@ def run(inputs: list[Path], out: Path, inp=input, echo=print) -> int:
     seen = {r["raw_description"] for r in done}
     todo: list[dict] = []
     for p in inputs:
-        for r in read_export(p):
+        try:
+            parsed = read_export(p)
+        except StatementError as e:
+            raise SystemExit(str(e)) from e
+        for r in parsed:
             if r["raw_description"] not in seen:
                 seen.add(r["raw_description"])
                 todo.append(r)
