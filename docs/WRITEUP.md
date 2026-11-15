@@ -109,6 +109,12 @@ it removed the words the hand-written rules anchor on, so a dataset-wide check f
 to the category model, it cost 1–3.5 points of category accuracy. Shipped: it runs on the normalizer's output and
 only names merchants, with category metrics unchanged (0 of 49 moved) and merchant names up from 83.5% to 87.5%.
 
+**Users can fix what's left, and a fix goes a long way.** Correcting one transaction fixes every transaction from
+that merchant, about 6 on average, and a review list puts the most uncertain, highest-traffic merchants first. In
+simulation, 3 fixes per user take merchants the model never saw from 81% to 94%. If half the users make one review
+action each, the other half go from 80% to 91% with no effort at all. That last number needs care: the synthetic
+population shares merchants densely, and real community fixes would need several users to agree first.
+
 **The agent's one miss was a tool bug.** Asked for monthly income, it called a spending-only tool,
 got $0 for every month with no warning, and decided the income was miscategorized. The tool now
 rejects that call with an error that names the right tool.

@@ -22,6 +22,7 @@ recurring detector), with an LLM planned only as a fallback for low-confidence c
 | merchant name exactly right (all / known chains) | 46.8% / 50.1% | **87.5% / 94.3%** |
 | throughput (4 workers, M1 laptop) | – | **11.5K txns/s**, p95 38 ms per 100-txn batch |
 | bank statement formats never seen in training | – | **78.6%** category (vs 78.2% on seen formats) |
+| user corrections (unseen merchants) | – | **each fix repairs ~6 transactions**; 3 fixes: 81% → 94% |
 | hybrid with Claude Haiku 5.5 fallback (400 unseen txns) | – | **91.2% category / 82.2% merchant**, matching Haiku-only (91.5% / 83.8%) |
 | serving cost per 1M txns | – | ≈ $0.004 model only · **≈ $0.56–1.13 hybrid** (cached) · $26 Haiku-only |
 
@@ -80,6 +81,7 @@ curl -s localhost:8000/v1/enrich -H 'content-type: application/json' -d '{"trans
 | `scripts/fetch_model.py` | download + SHA-256-verify the model for deploys (or train) |
 | `ledgerlens/format_eval.py` | leave-one-bank-format-out evaluation (unseen statement formats) |
 | `ledgerlens/boilerplate.py` | learns a bank's wrapper words from one statement, no labels (used for merchant names) |
+| `ledgerlens/corrections_eval.py` | simulated users fixing mistakes via the product's own code; community lift |
 | `ledgerlens/agent_eval.py` | 42-question agent eval with independent ground truth (97.6% on Haiku 5.5) |
 | `web/` | Next.js dashboard: decode hero, spending chart, transaction feed, recurring, chat |
 | `ledgerlens/evaluate.py` | metrics on synthetic test split and/or real labeled set |
@@ -457,6 +459,34 @@ This work also caught two smaller bugs: the evaluation briefly counted Starbucks
 also an employer in the data), and the normalizer removed dates too late for a processor prefix to be found once a
 wrapper was gone (`03/14 SQ *BLUE…`). Both are fixed and tested; neither changes any existing output.
 
+## User corrections
+
+Fix a merchant once, and every transaction from it is fixed: the name, the category, and everything downstream
+(spending totals, subscriptions, the agent's answers). Corrections are keyed by merchant (the cleaned name plus money
+in or out), the same key the LLM cache uses. A **"Double-check these"** list ranks merchants by *rows affected ×
+how unsure the model is*, so the first look does the most good ([finance.py](ledgerlens/finance.py)
+`apply_correction` / `review_queue`; API: `GET /review`, `POST /corrections`).
+
+**Measured** ([corrections_eval.py](ledgerlens/corrections_eval.py), [report](results/week5_corrections.md)). Simulated
+users correct their own transactions at merchants the model never saw, through the same `Ledger` code the API calls:
+
+| corrections per user | category | merchant names |
+|---|---|---|
+| 0 | 80.6% | 47.9% |
+| 1 | 86.4% | 63.1% |
+| 3 | 93.9% | 78.3% |
+| 5 | 98.2% | 85.9% |
+
+- **Each fix repairs about 6 transactions** (6.3 with the review list, 5.5 when fixing whatever you happen to notice).
+- **Community corrections:** if half the users each make *one* review action, the other half go from 79.7% to
+  **90.9%** category accuracy without doing anything.
+
+Read these with their scale. Each user has a median of only **10 distinct unseen merchants**, so 5 fixes covers
+half of them, and the curve is steep partly because the tail is short. The community number reflects a dense
+synthetic population (the median unseen merchant is shared by 5 of 300 users); a real long tail is sparser. Simulated
+users are always right, so production community corrections would need agreement from several users, plus abuse
+protection, before applying to anyone else. Per-user corrections don't need that.
+
 ## Labeling real data
 
 This is the number founders will ask about.
@@ -481,4 +511,5 @@ This is the number founders will ask about.
 - [x] **Week 5**: Render blueprint + CI, public-demo guards, verified model download, [writeup](docs/WRITEUP.md), [demo script](docs/DEMO.md)
 - [x] Unseen-bank-format evaluation + label-free boilerplate learner ([results](results/week5_formats.md))
 - [x] Boilerplate learner on in production for merchant names (category unaffected by design; see the gate above)
+- [x] User corrections: fix once, applied to every transaction from that merchant; review list; measured lift ([results](results/week5_corrections.md))
 - [ ] Hand-labeled real-data eval (`scripts/label.py`) and re-run of the LLM fallback eval on the fixed model

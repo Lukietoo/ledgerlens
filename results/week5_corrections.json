@@ -1,0 +1,116 @@
+{
+  "users": 300,
+  "rows": 22906,
+  "strategies": {
+    "notice": {
+      "curve": {
+        "0": {
+          "category_acc": 0.8055967868680695,
+          "merchant_acc": 0.4789138217061032
+        },
+        "1": {
+          "category_acc": 0.856020256701301,
+          "merchant_acc": 0.6357286300532612
+        },
+        "2": {
+          "category_acc": 0.9020344014668645,
+          "merchant_acc": 0.7444774294944556
+        },
+        "3": {
+          "category_acc": 0.9387060158910329,
+          "merchant_acc": 0.8260281149043919
+        },
+        "5": {
+          "category_acc": 0.9774294944556011,
+          "merchant_acc": 0.9118134986466429
+        },
+        "10": {
+          "category_acc": 0.9978171658080852,
+          "merchant_acc": 0.9882126953636602
+        }
+      },
+      "fixes_made": 2501,
+      "rows_fixed_per_fix": 5.54578168732507
+    },
+    "queue": {
+      "curve": {
+        "0": {
+          "category_acc": 0.8055967868680695,
+          "merchant_acc": 0.4789138217061032
+        },
+        "1": {
+          "category_acc": 0.864445996682092,
+          "merchant_acc": 0.6307517680956954
+        },
+        "2": {
+          "category_acc": 0.9070112634244303,
+          "merchant_acc": 0.7165371518379464
+        },
+        "3": {
+          "category_acc": 0.9389242993102244,
+          "merchant_acc": 0.7831572513751855
+        },
+        "5": {
+          "category_acc": 0.9820134462586222,
+          "merchant_acc": 0.8591635379376582
+        },
+        "10": {
+          "category_acc": 0.9987339561686894,
+          "merchant_acc": 0.9339910940364969
+        }
+      },
+      "fixes_made": 2023,
+      "rows_fixed_per_fix": 6.251112209589718
+    }
+  },
+  "community": {
+    "contributors": 150,
+    "beneficiaries": 150,
+    "by_k": {
+      "1": {
+        "shared_fixes": 59,
+        "before": {
+          "category_acc": 0.7974705474705475,
+          "merchant_acc": 0.47176022176022175
+        },
+        "after": {
+          "category_acc": 0.9094767844767845,
+          "merchant_acc": 0.6573111573111573
+        }
+      },
+      "3": {
+        "shared_fixes": 162,
+        "before": {
+          "category_acc": 0.7974705474705475,
+          "merchant_acc": 0.47176022176022175
+        },
+        "after": {
+          "category_acc": 0.9607588357588358,
+          "merchant_acc": 0.7283437283437283
+        }
+      },
+      "5": {
+        "shared_fixes": 262,
+        "before": {
+          "category_acc": 0.7974705474705475,
+          "merchant_acc": 0.47176022176022175
+        },
+        "after": {
+          "category_acc": 0.9645703395703396,
+          "merchant_acc": 0.7590956340956341
+        }
+      },
+      "10": {
+        "shared_fixes": 503,
+        "before": {
+          "category_acc": 0.7974705474705475,
+          "merchant_acc": 0.47176022176022175
+        },
+        "after": {
+          "category_acc": 0.9682085932085932,
+          "merchant_acc": 0.7993762993762994
+        }
+      }
+    }
+  }
+}
