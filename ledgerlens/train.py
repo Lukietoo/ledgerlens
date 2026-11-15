@@ -74,6 +74,7 @@ class Data:
     test: pd.DataFrame
     resolver: Resolver
     rf: ResolverFeaturizer
+    rf_name: ResolverFeaturizer  # over name_clean: merchant naming only
     brand_named: set[str]
     clean: np.ndarray  # test rows not from a brand-named merchant
 
@@ -96,7 +97,8 @@ def load(path: Path) -> Data:
     # truly "unseen" for any model that uses the rules. Report a brand-clean slice too.
     brand_named = set(test.loc[test["description"].map(baseline.is_brand_match), "merchant"])
     clean = ~test["merchant"].isin(brand_named).to_numpy()
-    return Data(train, val, test, resolver, ResolverFeaturizer(resolver, df["clean"]), brand_named, clean)
+    return Data(train, val, test, resolver, ResolverFeaturizer(resolver, df["clean"]),
+                ResolverFeaturizer(resolver, df["name_clean"]), brand_named, clean)
 
 
 def run_seed(d: Data, seed: int, hide_frac: float, history_dropout: float, log) -> tuple[dict, dict]:
@@ -152,8 +154,10 @@ def run_seed(d: Data, seed: int, hide_frac: float, history_dropout: float, log) 
     importance = pd.Series(clf.booster_.feature_importance("gain"), index=cols).sort_values(ascending=False).head(15)
 
     # merchant resolution: tune abstain threshold on val, report on test
-    def resolve(part, exclude, thr):
-        return d.resolver.resolve(list(part["clean"]), thr, exclude, S=rf.S[rf.uniq.get_indexer(part["clean"])])
+    def resolve(part, exclude, thr):  # names come from the boilerplate-stripped text
+        rn = d.rf_name
+        return d.resolver.resolve(list(part["name_clean"]), thr, exclude,
+                                  S=rn.S[rn.uniq.get_indexer(part["name_clean"])])
 
     grid = np.round(np.arange(0.30, 0.96, 0.025), 3)
     val_scores = [merchant_acc(resolve(val, val_hidden, t), val["merchant"], val["merchant_kind"])["overall"]

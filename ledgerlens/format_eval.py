@@ -33,7 +33,7 @@ import pandas as pd
 from sklearn.metrics import accuracy_score
 
 from ledgerlens import baseline
-from ledgerlens.boilerplate import learn_boilerplate, strip_boilerplate
+from ledgerlens.boilerplate import learn_boilerplate
 from ledgerlens.features import HISTORY_MISSING, add_clean, history_features, struct_amount_features
 from ledgerlens.model import (RESOLVER, TEXT, ResolverFeaturizer, as_categoricals, fit_lgbm,
                               fit_text_model, oof_stack_features, text_proba)
@@ -67,11 +67,12 @@ def format_rows(df: pd.DataFrame, kind: str) -> pd.Series:
 
 
 def featurize(raw: pd.DataFrame, resolver: Resolver, text_model, exclude: set[str],
-              rules_off: tuple[str, ...] = ()) -> tuple[pd.DataFrame, pd.DataFrame, ResolverFeaturizer]:
+              rules_off: tuple[str, ...] = (), boilerplate: dict | None = None
+              ) -> tuple[pd.DataFrame, pd.DataFrame, ResolverFeaturizer]:
     """Same features the model trained on, recomputed from raw descriptors (optionally with
     some normalizer rules switched off)."""
     with disabled_rules(rules_off):
-        d = add_clean(raw.reset_index(drop=True))
+        d = add_clean(raw.reset_index(drop=True), boilerplate=boilerplate)
     feats = pd.concat([struct_amount_features(d), history_features(d)], axis=1)
     d = pd.concat([d, feats.drop(columns=[c for c in feats if c in d.columns])], axis=1)
     rf = ResolverFeaturizer(resolver, d["clean"])
@@ -82,14 +83,14 @@ def featurize(raw: pd.DataFrame, resolver: Resolver, text_model, exclude: set[st
 
 
 def score(raw: pd.DataFrame, clf, resolver, text_model, tau, exclude, rules_off=(), boilerplate=None) -> dict:
+    """``boilerplate``: {user_id: words} learned from each user's FULL statement (what a real
+    upload provides; the scored subset alone would under-learn), or None to switch it off."""
     if raw.empty:
         return {"n": 0}
-    if boilerplate is not None:  # per-user words learned from that user's whole statement
-        raw = raw.assign(description=[strip_boilerplate(d, boilerplate.get(u, set()))
-                                      for d, u in zip(raw["description"], raw["user_id"])])
-    d, X, rf = featurize(raw, resolver, text_model, exclude, rules_off)
+    d, X, rf = featurize(raw, resolver, text_model, exclude, rules_off, boilerplate)
     pred = clf.predict(as_categoricals(X[FULL]))
-    merchants = resolver.resolve(list(d["clean"]), tau, exclude, S=rf.S[rf.uniq.get_indexer(d["clean"])])
+    rn = ResolverFeaturizer(resolver, d["name_clean"])  # names: boilerplate-stripped text
+    merchants = resolver.resolve(list(d["name_clean"]), tau, exclude, S=rn.S[rn.uniq.get_indexer(d["name_clean"])])
     return {
         "n": int(len(d)),
         "category_acc": float(accuracy_score(d["category"], pred)),
@@ -128,6 +129,8 @@ def run(data_path: Path, model_path: Path, formats: list[str], seed: int, log) -
     if raw_all["card_style"].isna().all():
         raise SystemExit("this data has no card_style/ach_style columns; regenerate it: python -m ledgerlens.synth")
     resolver, tau = data.resolver, float(joblib.load(model_path)["tau"])
+    # each user's boilerplate, learned from their whole statement (unlabeled; a real upload has it)
+    learned = {u: learn_boilerplate(g) for u, g in raw_all.groupby("user_id")["description"]}
     test_merchants = set(data.test["merchant"])
     rows = []
     for fmt in formats:
@@ -138,15 +141,15 @@ def run(data_path: Path, model_path: Path, formats: list[str], seed: int, log) -
         held, ctrl = raw_all[raw_all["user_id"].isin(users)], raw_all[~raw_all["user_id"].isin(users)]
         held, ctrl = held[format_rows(held, kind)][RAW_COLS], ctrl[format_rows(ctrl, kind)][RAW_COLS]
         rules = FORMAT_RULES.get(fmt, ())
-        # learned from each held-out user's full statement: unlabeled data a real upload would include
-        learned = {u: learn_boilerplate(g["description"]) for u, g in raw_all[raw_all["user_id"].isin(users)].groupby("user_id")}
         r = {"format": fmt, "held_out_users": len(users), "format_rules": list(rules)}
         for name, sub in (("unseen_merchants", lambda x: x[x["split"] == "test"]),
                           ("seen_merchants", lambda x: x[x["split"] == "train"])):
             r[name] = {
-                "control": score(sub(ctrl), clf, resolver, text_model, tau, test_merchants),
-                "model_never_saw": score(sub(held), clf, resolver, text_model, tau, test_merchants),
-                "nobody_saw": (score(sub(held), clf, resolver, text_model, tau, test_merchants, rules)
+                # control / never-saw / +learned = the production pipeline (learner on);
+                # nobody_saw = ablation with the learner off, i.e. the old pipeline on a new bank
+                "control": score(sub(ctrl), clf, resolver, text_model, tau, test_merchants, (), learned),
+                "model_never_saw": score(sub(held), clf, resolver, text_model, tau, test_merchants, (), learned),
+                "nobody_saw": (score(sub(held), clf, resolver, text_model, tau, test_merchants, rules, None)
                                if rules else None),
                 "nobody_saw_learned": (score(sub(held), clf, resolver, text_model, tau, test_merchants, rules, learned)
                                        if rules else None),
@@ -195,7 +198,9 @@ def to_markdown(rows: list[dict], summary: dict, seed: int) -> str:
          f"Seed {seed}. Each row retrains the full model with every user of that statement format removed. "
          "Scored on rows the format shapes, for merchants that are *also* held out of training "
          "(the strictest case). **Never saw** = the ML model never saw the format, but the normalizer's "
-         "hand-written rule for it is still on; **nobody saw** = that rule is switched off too.", "",
+         "hand-written rule for it is still on; **nobody saw** = that rule is switched off and the boilerplate "
+         "learner is off too (the old pipeline); **+ learned** = rule off, learner on (the current pipeline on a "
+         "brand-new bank). Control, never-saw and +learned all run the current pipeline (learner on).", "",
          "| held-out format | users | rows | control (format seen) | never saw | nobody saw | nobody saw + learned "
          "| rules baseline | merchant exact: control / never / nobody / +learned |", "|---|---|---|---|---|---|---|---|---|"]
     for r in rows:

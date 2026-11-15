@@ -19,7 +19,7 @@ import pandas as pd
 from ledgerlens.features import AMOUNT, HISTORY, RULES, STRUCT, add_clean, history_features, struct_amount_features
 from ledgerlens.llm import LLMClassifier, Txn
 from ledgerlens.model import RESOLVER, TEXT, ResolverFeaturizer, as_categoricals, text_proba
-from ledgerlens.normalize import display_name
+from ledgerlens.normalize import canon, display_name
 from ledgerlens.resolver import Resolver
 
 DEFAULT_PATH = Path("models/enricher.joblib")
@@ -115,15 +115,17 @@ class Enricher:
                        pd.DataFrame(text_proba(self.text_model, df["clean"]), columns=TEXT),
                        res[RESOLVER]], axis=1)
         proba = self.lgbm.predict_proba(as_categoricals(X[self.columns]))
-        known = res["res_sim"].to_numpy() >= self.tau
+        # naming uses the boilerplate-stripped text; category above uses the text it trained on
+        names = ResolverFeaturizer(self.resolver, df["name_clean"]).frame(df["name_clean"], exclude=exclude)
+        known = names["res_sim"].to_numpy() >= self.tau
         return pd.DataFrame({
             "description": df["description"],
             "amount": df["amount"],
-            "merchant": np.where(known, res["res_top1_merchant"], df["clean"].map(display_name)),
+            "merchant": np.where(known, names["res_top1_merchant"], df["name_clean"].map(display_name)),
             "merchant_in_directory": known,
             # cache key for LLM answers: same cleaned merchant + same direction of money.
             # Sign matters: "UC BERKELEY" outgoing is tuition, incoming is payroll.
-            "merchant_key": df["key"] + np.where(df["amount"].to_numpy() > 0, "|in", "|out"),
+            "merchant_key": df["name_clean"].map(canon) + np.where(df["amount"].to_numpy() > 0, "|in", "|out"),
             "category": self.lgbm.classes_[proba.argmax(1)],
             "confidence": proba.max(1).round(4),
             "is_recurring": feats["hist_rule_recurring"].astype(bool),

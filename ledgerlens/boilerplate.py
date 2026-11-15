@@ -8,7 +8,14 @@ lines (ignoring digits): a word in >= ``min_share`` of them is boilerplate. (Cou
 lines doesn't work: 30 identical coffee-shop lines make any word look repetitive.)
 
 Found by format_eval.py: with the hand-written rule for an unseen bank format switched
-off, merchant-name accuracy fell to 0% because the wrapper stayed in the cleaned string.
+off, merchant-name accuracy fell to 29% because the wrapper stayed in the cleaned string.
+Used in training and serving alike (features.add_clean), so the model never sees a
+different kind of string at inference than it trained on.
+
+It runs on the normalizer's OUTPUT (strip_clean), not the raw text: the hand-written rules
+anchor on exactly the words this removes (a trailing state code is how a city gets stripped;
+"PURCHASE AUTHORIZED ON" is how the date in front of "SQ *" gets stripped). Stripping first
+made 15% of rows gain words. After normalizing, it can only remove leftovers.
 """
 
 from __future__ import annotations
@@ -16,6 +23,8 @@ from __future__ import annotations
 import re
 from collections import Counter
 from collections.abc import Iterable
+
+from ledgerlens.normalize import PROCESSOR_PREFIXES, finish
 
 _WORD = re.compile(r"[A-Z][A-Z&'*-]*")
 
@@ -37,8 +46,39 @@ def learn_boilerplate(descriptions: Iterable[str], min_share: float = 0.25, min_
 _SPLIT = re.compile(r"[\s:]+")  # "DES:PAYMENT" and "INDN:BRIAN" are two words each
 
 
+# Payment-processor prefixes ("SQ *", "TST*") repeat across many merchants for a heavy Square
+# user, but they are signal (Toast = restaurant), not bank boilerplate. General payments
+# knowledge, not knowledge of any one bank's format.
+_PROTECTED = frozenset(PROCESSOR_PREFIXES)
+
+
+def _is_boilerplate(tok: str, words: set[str]) -> bool:
+    ws = set(_words(tok))
+    if not ws or "*" in tok or ws & _PROTECTED:
+        return False
+    return ws <= words
+
+
 def strip_boilerplate(desc: str, words: set[str]) -> str:
     if not words:
         return desc
-    kept = [tok for tok in _SPLIT.split(desc) if tok and not (set(_words(tok)) and set(_words(tok)) <= words)]
+    kept = [tok for tok in _SPLIT.split(desc) if tok and not _is_boilerplate(tok, words)]
     return " ".join(kept) if kept else desc
+
+
+def strip_clean(clean: str, words: set[str]) -> tuple[str, str | None]:
+    """Remove learned boilerplate from a normalizer output. Returns (clean, processor).
+
+    If stripping exposes a processor prefix at the front ("PURCHASE AUTHORIZED ON SQ BLUE
+    BTL COF" on a bank nobody wrote a rule for), it is dropped and reported, as the
+    normalizer would have done had it been at the front of the raw text.
+    """
+    if not words:
+        return clean, None
+    toks = clean.split()
+    kept = [t for t in toks if not (t in words and t not in _PROTECTED)]
+    processor = None
+    if kept and kept != toks and kept[0] in _PROTECTED and toks[0] != kept[0] and len(kept) > 1:
+        processor, kept = PROCESSOR_PREFIXES[kept[0]], kept[1:]
+    out = finish(" ".join(kept))
+    return (out, processor) if out else (clean, None)

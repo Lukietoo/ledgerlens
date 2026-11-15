@@ -16,6 +16,7 @@ import numpy as np
 import pandas as pd
 
 from ledgerlens.baseline import categorize, detect_recurring
+from ledgerlens.boilerplate import learn_boilerplate, strip_clean
 from ledgerlens.normalize import canon, normalize
 
 ENTRY_TYPES: dict[str, str] = {
@@ -41,13 +42,27 @@ RULES = ["rule_cat"]
 CATEGORICAL = ["processor", "entry", "res_top1_cat", "rule_cat"]
 
 
-def add_clean(df: pd.DataFrame) -> pd.DataFrame:
-    """Adds ``clean`` / ``processor`` / ``key`` columns (normalizer output)."""
-    norm = {d: normalize(d) for d in df["description"].unique()}
+def add_clean(df: pd.DataFrame, boilerplate: str | dict | None = "auto") -> pd.DataFrame:
+    """Adds ``clean`` / ``processor`` / ``key`` (normalizer output, used for CATEGORY features)
+    and ``name_clean`` (the same, minus each statement's learned boilerplate, used only to NAME
+    the merchant).
+
+    The split is measured, not cosmetic: feeding the learner's output to the category model too
+    improved names but cost 1-3.5 pts of category accuracy on formats it already knew (README,
+    "Unseen bank formats"). ``boilerplate``: "auto" learns per user from their rows in ``df``; a
+    dict {user_id: words} uses words learned elsewhere (a user's full statement); None = off.
+    """
     df = df.copy()
+    norm = {d: normalize(d) for d in df["description"].unique()}
     df["clean"] = df["description"].map(lambda d: norm[d].clean)
     df["processor"] = df["description"].map(lambda d: norm[d].processor or "NONE")
     df["key"] = df["clean"].map(canon)
+    df["name_clean"] = df["clean"]
+    if boilerplate is not None and "user_id" in df:
+        learned = boilerplate if isinstance(boilerplate, dict) else {
+            u: learn_boilerplate(g) for u, g in df.groupby("user_id")["description"]}
+        # after normalizing: the rules anchor on the very words the learner removes
+        df["name_clean"] = [strip_clean(c, learned.get(u, set()))[0] for c, u in zip(df["clean"], df["user_id"])]
     return df
 
 

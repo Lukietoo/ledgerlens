@@ -150,6 +150,12 @@ def _strip_location(s: str) -> str:
     return " ".join(tokens)
 
 
+def finish(s: str) -> str:
+    """Final tidy-up shared with boilerplate.strip_clean: trailing filler words, doubled words."""
+    s = _FILLER_TAIL.sub("", _SPACES.sub(" ", s).strip()).strip()
+    return _DUP_WORD.sub(r"\1", s)  # "DOORDASH DOORDASH" (name + domain) -> "DOORDASH"
+
+
 def normalize(raw: str) -> Normalized:
     s = _SPACES.sub(" ", raw.upper()).strip()
 
@@ -159,6 +165,10 @@ def normalize(raw: str) -> Normalized:
     for name, pat in _TRAILERS:
         if name not in _DISABLED:
             s = pat.sub("", s)
+
+    # dates first: once boilerplate is stripped, "03/14 SQ *BLUE..." must still expose the
+    # processor prefix at the start (the processor rule is anchored there)
+    s = _SPACES.sub(" ", _DATE.sub(" ", s)).strip()
 
     # P2P: the counterparty is a person; the merchant is the rail.
     p2p = _P2P.match(s)
@@ -185,8 +195,7 @@ def normalize(raw: str) -> Normalized:
     s = _PUNCT.sub(" ", s)
     s = _SPACES.sub(" ", s).strip()
     s = _strip_location(s)
-    s = _FILLER_TAIL.sub("", s).strip()
-    s = _DUP_WORD.sub(r"\1", s)  # "DOORDASH DOORDASH" (name + domain) -> "DOORDASH"
+    s = finish(s)
 
     if not s:  # never return empty; fall back to the first raw token
         s = _PUNCT.sub("", raw.upper().split()[0]) if raw.strip() else ""
