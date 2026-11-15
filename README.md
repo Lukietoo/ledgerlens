@@ -21,8 +21,8 @@ recurring detector), with an LLM planned only as a fallback for low-confidence c
 | accuracy, leak-free slice ([why](#leakage-check)) | 42.8% | **76.0%** |
 | merchant name exactly right (known chains) | 49.2% | **94.1%** |
 | throughput (4 workers, M1 laptop) | – | **11.5K txns/s**, p95 38 ms per 100-txn batch |
-| hybrid with Claude Haiku 5.5 fallback (400 unseen txns) | – | **92.0%**, matching Haiku-only (91.5%) at ¼ of the LLM cost |
-| serving cost per 1M txns | – | ≈ $0.004 model only · **$6 hybrid** · $26 Haiku-only (measured tokens) |
+| hybrid with Claude Haiku 5.5 fallback (400 unseen txns) | – | **91.2% category / 82.2% merchant**, matching Haiku-only (91.5% / 83.8%) |
+| serving cost per 1M txns | – | ≈ $0.004 model only · **≈ $0.62–1.21 hybrid** (cached) · $26 Haiku-only |
 
 Synthetic data, mean of 3 seeds. Real hand-labeled numbers: [in progress](#labeling-real-data).
 
@@ -187,9 +187,11 @@ charge has no obvious hint.
 ## Week 3: serving, load test, LLM fallback, cost
 
 ```
-POST /v1/enrich ──> Enricher (normalizer → resolver → LightGBM) ──> confidence ≥ 0.8 ──> response
-                                                                 └─> confidence < 0.8 ──> Claude (batched,
-                                                                     structured output, category enum) ──> response
+POST /v1/enrich ──> Enricher (normalizer → resolver → LightGBM) ──> confident + merchant in directory ──> response
+                                                                 └─> confidence < 0.8 OR merchant unknown
+                                                                     ──> per-merchant cache ──hit──> response
+                                                                                            └─miss─> Claude (batched,
+                                                                     structured output, category enum) ──> cache ──> response
 ```
 
 ### Load test ([locust](loadtest/locustfile.py), 4 uvicorn workers, M1 laptop, locust on the same machine)
@@ -225,42 +227,56 @@ never reaches the LLM. Better calibration, or routing on "merchant not in direct
 - The model's guess goes along as a hint ("these rows were sent to you because it was unsure").
 - `effort: "low"`: this is classification, not reasoning-heavy work.
 - Server-side refusal fallbacks (`fallbacks: "default"`) are on. If the chain still refuses, the rows keep the model's answer.
-- A merchant found in the directory is never overwritten by the LLM's name.
+- A merchant found in the directory is never overwritten by the LLM's name. On confident rows the LLM supplies the
+  name only, and the model's category stands (measured: taking the LLM's category there costs 2 pts).
+- One LLM lookup per merchant key, cached across requests (in-process today; Redis/Postgres in production,
+  where confirmed names would also be written back into the directory).
 - Defaults to `claude-opus-5-5`; any model in `PRICES` can be passed (`LEDGERLENS_LLM_MODEL`, `--model`).
 
 ### Measured: model vs LLM vs hybrid ([report](results/week3_llm_claude-haiku-5-5.md))
 
 400 unique test descriptions (cold directory, unseen merchants), Claude Haiku 5.5, 25 txns per request:
 
-| strategy | category acc (95% CI) | merchant exact | LLM calls | latency |
-|---|---|---|---|---|
-| Ledgerlens model only | 76.5% [72.1–80.4] | 40.5% | 0 | ~13 ms |
-| Haiku only | 91.5% [88.4–93.9] | **83.8%** | every txn | ~3.3 s per 25-txn request |
-| **hybrid** (Haiku on the 130 txns below 0.8) | **92.0%** [88.9–94.3] | 53.8% | 33% of this sample | 13 ms for the rest |
+| strategy | category acc (95% CI) | merchant exact (95% CI) | LLM calls on this sample |
+|---|---|---|---|
+| Ledgerlens model only | 76.5% [72.1–80.4] | 40.5% [35.8–45.4] | 0 |
+| Haiku only | 91.5% [88.4–93.9] | 83.8% [79.8–87.0] | 400 txns |
+| hybrid v1: LLM on low-confidence rows | 91.2% [88.1–93.6] | 52.8% [47.9–57.6] | 66 merchant keys |
+| **hybrid v2: + merchants not in directory, LLM names only** (shipped) | **91.2%** [88.1–93.6] | **82.2%** [78.2–85.7] | 190 merchant keys |
+| hybrid v2 variant: also take the LLM's category on those rows | 89.2% [85.8–91.9] | 82.2% [78.2–85.7] | 190 merchant keys |
 
-0 refusals and 0 unparseable responses across 22 requests. The run cost $0.015.
-(Unique descriptions over-weight hard, rare rows, which is why model-only reads 76.5% here vs 81.6% on all traffic.)
+0 refusals and 0 unparseable responses. Both runs together cost $0.02.
+Unique descriptions over-weight hard, rare rows, which is why model-only reads 76.5% here vs 81.6% on all traffic.
+Hybrid v1 first measured 92.0% with one LLM answer per *description*. It now uses one answer per *merchant key*
+(cached), which reads 91.2%; that difference is within noise.
 
 **What this says, plainly:**
 - **An off-the-shelf small LLM beats my model by 15 points** on merchants it has never seen. Part of that is world
   knowledge: it already knows what "SWEETGRN" is, and the synthetic chains are real brands.
-- **The hybrid ties Haiku-only on category** (92.0% vs 91.5%, well within the CI) while sending only the
-  low-confidence third of this sample, about 21.5% of real traffic, to the LLM. So the model's job is to be the cheap, 13 ms
-  path for the easy majority and to *know when it's unsure*.
-- **The hybrid leaves merchant names on the table** (53.8% vs 83.8%). It only takes the LLM's merchant name on
-  routed rows, but most unseen chains are routed-out confident rows whose category is right and whose name isn't.
-  Next fix: also route rows whose merchant isn't in the directory, then re-run this eval.
+- **Hybrid v2 matches Haiku-only on both category and merchant name** (within the CIs). It sends the LLM only
+  low-confidence rows and merchants missing from the directory, and only *once per merchant* thanks to the cache.
+- **v1 left merchant names on the table** (52.8%). Unseen chains the model categorized *confidently* never
+  reached the LLM, so they kept a cleaned descriptor ("Sweetgrn") as their name. Routing on "not in directory"
+  fixed it: **+29 pts merchant accuracy at the same category accuracy**.
+- **Don't take the LLM's category when the model is confident.** It *lowered* accuracy (91.2% → 89.2%). On confident
+  rows the model's category is right ~87% of the time (cold) and ~98% (warm), so the LLM is there for names.
 
 ### Cost per 1M transactions ([cost report](results/week3_cost.md))
+
+LLM answers are cached per merchant key (cleaned merchant + money in/out), so a merchant costs one call the
+first time it's seen and nothing after. Over a year of test traffic that's **4.7 LLM calls per 100 txns
+(cold) / 2.4 (warm)** for hybrid v2, even though it *routes* 96% / 35% of rows.
 
 | | per 1M txns |
 |---|---|
 | Ledgerlens model only (measured throughput, assumes $0.04/vCPU-hour) | **≈ $0.004** |
-| hybrid, Haiku 5.5 on 21.5% of traffic (measured tokens: 103 in / 31 out per txn) | **≈ $6** |
-| Haiku 5.5 only (measured) | ≈ $26 |
-| hybrid / LLM-only, Opus 5.5 | ≈ $298 / $1,381 (est.) |
+| **hybrid v2 + cache, Haiku 5.5** (measured tokens: 103 in / 31 out per txn) | **≈ $0.62 warm / $1.21 cold** |
+| hybrid v1 without cache, Haiku 5.5 | ≈ $3.60 / $5.60 |
+| Haiku 5.5 only | ≈ $26 |
+| hybrid v2 + cache / LLM-only, Opus 5.5 | ≈ $33–64 / $1,381 (est.) |
 
-(est.) = token counts estimated before any API call. Re-run with a different model:
+(est.) = token counts estimated before any API call. Cache rates come from 300 synthetic users; real traffic from
+more users repeats merchants more, so they're conservative. Re-run with a different model:
 
 ```bash
 .venv/bin/python -m ledgerlens.llm_eval                                      # dry run: plan + cost estimate
@@ -287,6 +303,6 @@ This is the number founders will ask about.
 - [x] **Week 1**: synthetic generator, normalizer, rules baseline, eval harness, labeling tool
 - [x] **Week 2**: merchant resolver, stacked TF-IDF + LightGBM category model, ablations, leakage audit
 - [x] **Week 3**: FastAPI serving, locust load test, confidence routing, LLM fallback (measured on Haiku 5.5), cost per 1M transactions
-  - [ ] route "merchant not in directory" rows to the LLM too, to close the merchant-name gap
+  - [x] route "merchant not in directory" rows to the LLM too, with a per-merchant cache (merchant accuracy 52.8% → 82.2%)
 - [ ] **Week 4**: Next.js dashboard + Claude tool-calling finance agent with eval set
 - [ ] **Week 5**: deploy, writeup, demo video

@@ -23,7 +23,7 @@ from fastapi import FastAPI, Request
 from pydantic import BaseModel, Field
 
 from ledgerlens.llm import DEFAULT_MODEL, LLMClassifier
-from ledgerlens.pipeline import DEFAULT_LLM_THRESHOLD, Enricher, apply_llm_fallback
+from ledgerlens.pipeline import DEFAULT_LLM_THRESHOLD, Enricher, RoutingPolicy, apply_llm_fallback
 from ledgerlens.taxonomy import CATEGORIES
 
 log = logging.getLogger("ledgerlens")
@@ -103,7 +103,9 @@ def enrich(req: EnrichRequest, request: Request) -> EnrichResponse:
     llm_ms, routed = 0.0, 0
     if req.llm_fallback and s.llm is not None:
         t1 = time.perf_counter()
-        out = apply_llm_fallback(out, s.llm, s.threshold)
+        # names-only policy won the eval (results/week3_llm_*.md): route low-confidence rows AND rows
+        # whose merchant isn't in the directory; take the LLM's category only on low-confidence rows.
+        out = apply_llm_fallback(out, s.llm, RoutingPolicy(threshold=s.threshold))
         llm_ms = (time.perf_counter() - t1) * 1000
         routed = int((out["source"] == "llm").sum())
     else:

@@ -3,7 +3,6 @@
   "regime": "cold",
   "n": 400,
   "threshold": 0.8,
-  "routed": 130,
   "batch_size": 25,
   "model_only": {
     "accuracy": 0.765,
@@ -26,24 +25,41 @@
           12548
         ]
       }
+    },
+    "reused_from_previous_run": true
+  },
+  "hybrids": {
+    "hybrid: confidence only (week 3)": {
+      "accuracy": 0.9125,
+      "merchant_exact": 0.5275,
+      "rows_routed": 130,
+      "llm_calls": 66
+    },
+    "hybrid: + unknown merchants, LLM names only": {
+      "accuracy": 0.9125,
+      "merchant_exact": 0.8225,
+      "rows_routed": 386,
+      "llm_calls": 190
+    },
+    "hybrid: + unknown merchants, LLM names + categories": {
+      "accuracy": 0.8925,
+      "merchant_exact": 0.8225,
+      "rows_routed": 386,
+      "llm_calls": 190
     }
   },
-  "hybrid": {
-    "accuracy": 0.92,
-    "merchant_exact": 0.5375,
-    "usage": {
-      "requests": 6,
-      "input_tokens": 15895,
-      "output_tokens": 5727,
-      "refusals": 0,
-      "seconds": 22.29,
-      "cost_usd": 0.0045,
-      "by_model": {
-        "claude-haiku-5-5": [
-          15895,
-          5727
-        ]
-      }
+  "hybrid_usage": {
+    "requests": 8,
+    "input_tokens": 21837,
+    "output_tokens": 7661,
+    "refusals": 0,
+    "seconds": 30.25,
+    "cost_usd": 0.006,
+    "by_model": {
+      "claude-haiku-5-5": [
+        21837,
+        7661
+      ]
     }
   },
   "tokens_per_txn": {

@@ -122,7 +122,23 @@
         "accuracy": 0.8915610510046368
       }
     ],
-    "ece": 0.07582478389941501
+    "ece": 0.07582478389941501,
+    "policies": {
+      "confidence < 0.8 (week 3)": {
+        "routed_rows": 0.2154893914258273,
+        "llm_calls_per_txn_cached": 0.01191827468785471,
+        "unique_keys_routed": 273,
+        "model_acc_unknown_confident": null,
+        "share_unknown_confident": 0.0
+      },
+      "confidence < 0.8 OR merchant not in directory": {
+        "routed_rows": 0.9584388369859426,
+        "llm_calls_per_txn_cached": 0.04658168165546145,
+        "unique_keys_routed": 1067,
+        "model_acc_unknown_confident": 0.8727229991773416,
+        "share_unknown_confident": 0.7429494455601152
+      }
+    }
   },
   "warm": {
     "accuracy": 0.8540557059285777,
@@ -241,6 +257,22 @@
         "accuracy": 0.9316220644456581
       }
     ],
-    "ece": 0.07031293547542132
+    "ece": 0.07031293547542132,
+    "policies": {
+      "confidence < 0.8 (week 3)": {
+        "routed_rows": 0.13869728455426525,
+        "llm_calls_per_txn_cached": 0.01052126080502925,
+        "unique_keys_routed": 241,
+        "model_acc_unknown_confident": null,
+        "share_unknown_confident": 0.0
+      },
+      "confidence < 0.8 OR merchant not in directory": {
+        "routed_rows": 0.34637212957303765,
+        "llm_calls_per_txn_cached": 0.02366192264035624,
+        "unique_keys_routed": 542,
+        "model_acc_unknown_confident": 0.9812907294513349,
+        "share_unknown_confident": 0.20767484501877237
+      }
+    }
   }
 }

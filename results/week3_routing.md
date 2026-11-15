@@ -28,6 +28,13 @@ Calibration (confidence bin → accuracy):
 | 0.8–0.9 | 1,795 | 0.85 | 74.5% |
 | 0.9–1.0 | 16,175 | 0.98 | 89.2% |
 
+Routing policies (LLM calls assume answers are cached per merchant key):
+
+| policy | rows routed | LLM calls per txn (cached) | rows routed only for a name | model category acc on those |
+|---|---|---|---|---|
+| confidence < 0.8 (week 3) | 21.5% | 1.19% | 0.0% | – |
+| confidence < 0.8 OR merchant not in directory | 95.8% | 4.66% | 74.3% | 87.3% |
+
 ### warm directory: model accuracy 85.4%, ECE 0.070
 
 | route to LLM below | traffic routed | model acc on kept | model acc on routed | hybrid ceiling |
@@ -54,5 +61,12 @@ Calibration (confidence bin → accuracy):
 | 0.7–0.8 | 1,346 | 0.75 | 56.2% |
 | 0.8–0.9 | 1,419 | 0.86 | 77.6% |
 | 0.9–1.0 | 18,310 | 0.98 | 93.2% |
+
+Routing policies (LLM calls assume answers are cached per merchant key):
+
+| policy | rows routed | LLM calls per txn (cached) | rows routed only for a name | model category acc on those |
+|---|---|---|---|---|
+| confidence < 0.8 (week 3) | 13.9% | 1.05% | 0.0% | – |
+| confidence < 0.8 OR merchant not in directory | 34.6% | 2.37% | 20.8% | 98.1% |
 
 Hybrid ceiling = accuracy if the LLM got every routed row right. Measured hybrid numbers: week3_llm.md.
