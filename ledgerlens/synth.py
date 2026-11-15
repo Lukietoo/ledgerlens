@@ -393,6 +393,8 @@ class Simulator:
         for m in self.locals:
             self.locals_by_cat.setdefault(m.category, []).append(m)
         self.n_users = n_users
+        # user_id -> (card statement format, ACH format): which "bank" they use, for format_eval.py
+        self.user_styles: dict[str, tuple[str, str]] = {}
 
     # -- descriptor for a card txn, stable per (user, merchant, city)
     def card_desc(self, u: User, m: Merchant, d: date, rec: bool, city: tuple[str, str]) -> str:
@@ -425,6 +427,7 @@ class Simulator:
             ach_style=rng.choice(ACH_STYLES),
             holder=f"{rng.choice(FIRST)} {rng.choice(LAST)}"[:22],
         )
+        self.user_styles[u.uid] = (u.card_style, u.ach_style)
         out: list[Txn] = []
         cat = self.by_cat
         loc = self.locals_by_cat
@@ -658,10 +661,10 @@ def assign_splits(merchant_category: dict[str, str]) -> dict[str, str]:
 
 
 FIELDS = ["txn_id", "user_id", "date", "description", "amount", "merchant", "category",
-          "is_recurring", "merchant_kind", "split"]
+          "is_recurring", "merchant_kind", "split", "card_style", "ach_style"]
 
 
-def write_csv(txns: list[Txn], path: Path) -> None:
+def write_csv(txns: list[Txn], path: Path, styles: dict[str, tuple[str, str]] | None = None) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     first_cat: dict[str, str] = {}
     for t in txns:
@@ -672,7 +675,8 @@ def write_csv(txns: list[Txn], path: Path) -> None:
         w.writerow(FIELDS)
         for i, t in enumerate(txns):
             w.writerow([f"t{i:07d}", t.user_id, t.date.isoformat(), t.description, f"{t.amount:.2f}",
-                        t.merchant, t.category, int(t.is_recurring), t.merchant_kind, splits[t.merchant]])
+                        t.merchant, t.category, int(t.is_recurring), t.merchant_kind, splits[t.merchant],
+                        *(styles or {}).get(t.user_id, ("", ""))])
 
 
 def main() -> None:
@@ -683,8 +687,9 @@ def main() -> None:
     ap.add_argument("--out", type=Path, default=Path("data/synthetic/transactions.csv"))
     args = ap.parse_args()
 
-    txns = Simulator(args.seed, args.users, args.locals_per_category).run()
-    write_csv(txns, args.out)
+    sim = Simulator(args.seed, args.users, args.locals_per_category)
+    txns = sim.run()
+    write_csv(txns, args.out, sim.user_styles)
     merchants = {t.merchant for t in txns}
     print(f"wrote {len(txns):,} txns, {len(merchants):,} merchants, {args.users} users -> {args.out}")
 

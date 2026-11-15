@@ -12,6 +12,7 @@ resolver's job (week 2).
 from __future__ import annotations
 
 import re
+from contextlib import contextmanager
 from dataclasses import dataclass
 
 US_STATES = frozenset(
@@ -60,31 +61,59 @@ _PROCESSOR_RE = re.compile(
     r"^(?P<proc>" + "|".join(sorted(PROCESSOR_PREFIXES, key=len, reverse=True)) + r")\s?\*\s?(?P<rest>.*)$"
 )
 
-_BANK_WRAPPERS = [
-    re.compile(p)
-    for p in (
-        r"^(RECURRING )?PURCHASE AUTHORIZED ON \d{2}/\d{2}\s+",
-        r"^RECURRING PAYMENT AUTHORIZED ON \d{2}/\d{2}\s+",
-        r"^POS (DEBIT|PURCHASE|WITHDRAWAL)\s+",
-        r"^CHECKCARD \d{4}\s+",
-        r"^DEBIT CARD PURCHASE\s*-?\s*",
-        r"^(VISA|MC|DBT) (DEBIT|PURCHASE|CRD)\s+",
-        r"^ACH (DEBIT|CREDIT|PMT)\s+",
+# Named so an evaluation can switch off the rules written for one bank's format
+# (format_eval.py: "would this still work on a bank format nobody wrote a rule for?").
+_BANK_WRAPPERS: list[tuple[str, re.Pattern]] = [
+    (name, re.compile(p))
+    for name, p in (
+        ("wf_purchase", r"^(RECURRING )?PURCHASE AUTHORIZED ON \d{2}/\d{2}\s+"),
+        ("wf_recurring", r"^RECURRING PAYMENT AUTHORIZED ON \d{2}/\d{2}\s+"),
+        ("pos", r"^POS (DEBIT|PURCHASE|WITHDRAWAL)\s+"),
+        ("checkcard", r"^CHECKCARD \d{4}\s+"),
+        ("debit_card", r"^DEBIT CARD PURCHASE\s*-?\s*"),
+        ("network_prefix", r"^(VISA|MC|DBT) (DEBIT|PURCHASE|CRD)\s+"),
+        ("ach_prefix", r"^ACH (DEBIT|CREDIT|PMT)\s+"),
     )
 ]
 
-_TRAILERS = [
-    re.compile(p)
-    for p in (
-        r"\s+S\d{9,}\s+CARD\s+\d{4}$",  # Wells Fargo style
-        r"\s+CARD\s+\d{4}$",
-        r"\s+\d{15,}$",  # BofA 23-digit ref
-        r"\s+(PPD|WEB|CCD|TEL)(\s+ID:?\s*\S+)?$",
-        r"\s+DES:.*$",  # BofA ACH:  CO DES:ENTRY ID:... INDN:... CO ID:... PPD
-        r"\s+(PPD|WEB|CCD|TEL)\s+ID:?\s*\S+",
-        r"\s+REF\s*#\s*\S+",
+_TRAILERS: list[tuple[str, re.Pattern]] = [
+    (name, re.compile(p))
+    for name, p in (
+        ("wf_card_ref", r"\s+S\d{9,}\s+CARD\s+\d{4}$"),  # Wells Fargo style
+        ("card_last4", r"\s+CARD\s+\d{4}$"),
+        ("long_ref", r"\s+\d{15,}$"),  # BofA 23-digit ref
+        ("ach_sec_tail", r"\s+(PPD|WEB|CCD|TEL)(\s+ID:?\s*\S+)?$"),
+        ("ach_des", r"\s+DES:.*$"),  # BofA ACH:  CO DES:ENTRY ID:... INDN:... CO ID:... PPD
+        ("ach_sec_id", r"\s+(PPD|WEB|CCD|TEL)\s+ID:?\s*\S+"),
+        ("ref_hash", r"\s+REF\s*#\s*\S+"),
     )
 ]
+
+# Which hand-written rules exist only because of one bank's statement format.
+FORMAT_RULES: dict[str, tuple[str, ...]] = {
+    "card:wf": ("wf_purchase", "wf_recurring", "wf_card_ref", "card_last4"),
+    "card:boa": ("checkcard", "long_ref"),
+    "card:pos": ("pos",),
+    "card:debit": ("debit_card",),
+    "ach:boa": ("ach_des",),
+    "ach:chase": ("ach_sec_tail", "ach_sec_id"),
+}
+_DISABLED: set[str] = set()
+
+
+@contextmanager
+def disabled_rules(names):
+    """Temporarily switch off named normalizer rules (evaluation only; not thread-safe)."""
+    names = set(names)
+    unknown = names - {n for n, _ in _BANK_WRAPPERS + _TRAILERS}
+    if unknown:
+        raise KeyError(f"unknown normalizer rules: {sorted(unknown)}")
+    _DISABLED.update(names)
+    try:
+        yield
+    finally:
+        _DISABLED.difference_update(names)
+
 
 _PHONE = re.compile(r"\b\d{3}[-. ]?\d{3}[-. ]?\d{4}\b")
 _HOST_PREFIX = re.compile(r"\b(?:HELP|WWW|SUPPORT|PAY)\.\S*")  # often truncated: "HELP.LEMONADE"
@@ -124,10 +153,12 @@ def _strip_location(s: str) -> str:
 def normalize(raw: str) -> Normalized:
     s = _SPACES.sub(" ", raw.upper()).strip()
 
-    for pat in _BANK_WRAPPERS:
-        s = pat.sub("", s)
-    for pat in _TRAILERS:
-        s = pat.sub("", s)
+    for name, pat in _BANK_WRAPPERS:
+        if name not in _DISABLED:
+            s = pat.sub("", s)
+    for name, pat in _TRAILERS:
+        if name not in _DISABLED:
+            s = pat.sub("", s)
 
     # P2P: the counterparty is a person; the merchant is the rail.
     p2p = _P2P.match(s)
@@ -142,11 +173,11 @@ def normalize(raw: str) -> Normalized:
         s = m.group("rest")
 
     s = _PHONE.sub(" ", s)
+    s = _DATE.sub(" ", s)  # before _URL_PATH, which would eat the "/14" of "03/14"
     s = _HOST_PREFIX.sub(" ", s)
     s = _URL_PATH.sub(" ", s)
     s = _DOMAIN_SUFFIX.sub(" ", s)
     s = re.sub(r"\bWWW\.", "", s)
-    s = _DATE.sub(" ", s)
     s = _STAR_CODE.sub(" ", s)
     s = _STORE_NO.sub(" ", s)
     s = _MIXED_REF.sub(" ", s)
