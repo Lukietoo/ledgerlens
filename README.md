@@ -12,7 +12,7 @@ build budgeting, underwriting, or fraud features on top. Ledgerlens is a
 classic-ML pipeline (normalizer → merchant resolver → stacked category model →
 recurring detector), with an LLM planned only as a fallback for low-confidence cases.
 
-**Status:** Weeks 1–4 of 5 are done.
+**Status:** all 5 weeks built. The writeup is [docs/WRITEUP.md](docs/WRITEUP.md); the demo script is [docs/DEMO.md](docs/DEMO.md).
 
 | on merchants never seen in training | rules baseline | Ledgerlens |
 |---|---|---|
@@ -75,6 +75,8 @@ curl -s localhost:8000/v1/enrich -H 'content-type: application/json' -d '{"trans
 | `ledgerlens/statements.py` | bank CSV parser (column aliases, split debit/credit columns) |
 | `ledgerlens/finance.py` | deterministic analytics: spending, recurring, forecast (the agent's tools) |
 | `ledgerlens/agent.py` | Claude finance agent: tool loop, trace, guardrails |
+| `ledgerlens/guards.py` | public-deploy guards: per-client rate limits, daily LLM spend cap |
+| `scripts/fetch_model.py` | download + SHA-256-verify the model for deploys (or train) |
 | `ledgerlens/agent_eval.py` | 42-question agent eval with independent ground truth (97.6% on Haiku 5.5) |
 | `web/` | Next.js dashboard: decode hero, spending chart, transaction feed, recurring, chat |
 | `ledgerlens/evaluate.py` | metrics on synthetic test split and/or real labeled set |
@@ -363,6 +365,31 @@ now does.
 - **Card autopay counted as a subscription.** A monthly transfer looked recurring; it's now excluded, since it
   pays for spending already counted.
 
+## Week 5: deploy
+
+One [Render blueprint](render.yaml) deploys the API and the dashboard; [CI](.github/workflows/ci.yml) runs the
+tests and the web build on every push. CI needs no API key: the tests use a fake LLM client.
+
+**Public-demo safety.** On a public server the chat endpoint spends real money and uploads would be strangers'
+bank data, so the blueprint turns uploads off, limits chat to 6 requests/minute per client, and caps LLM spend at
+$2/day ([guards.py](ledgerlens/guards.py)). Past the cap, enrichment falls back to model-only and chat returns a
+clear 503. Keys live in Render's dashboard, never in the repo.
+
+**The model artifact.** Training needs about 600 MB of RAM, more than a free build box has, so the trained model
+ships as a GitHub release asset. It's a pickle, and loading a pickle runs code, so
+[fetch_model.py](scripts/fetch_model.py) downloads it over HTTPS and refuses to install it unless its SHA-256
+matches [model.sha256](model.sha256), which is committed with the code. With no URL set, it trains instead.
+
+Steps:
+
+1. Push the repo to GitHub, then publish the model and pin its checksum:
+   `scripts/release_model.sh model-v1` (needs `gh auth login`; commit the updated `model.sha256`).
+2. In Render: **New → Blueprint**, pick the repo. When prompted, paste `ANTHROPIC_API_KEY` and the
+   `LEDGERLENS_MODEL_URL` that the release script printed.
+3. Open the `ledgerlens-web` URL and click **Try it on a demo account**.
+
+Free Render services sleep when idle; the first request after a nap takes about 30–60 s.
+
 ## Labeling real data
 
 This is the number founders will ask about.
@@ -384,4 +411,5 @@ This is the number founders will ask about.
 - [x] **Week 3**: FastAPI serving, locust load test, confidence routing, LLM fallback (measured on Haiku 5.5), cost per 1M transactions
   - [x] route "merchant not in directory" rows to the LLM too, with a per-merchant cache (merchant accuracy 52.8% → 82.2%)
 - [x] **Week 4**: Next.js dashboard + Claude tool-calling finance agent with eval set
-- [ ] **Week 5**: deploy, writeup, demo video
+- [x] **Week 5**: Render blueprint + CI, public-demo guards, verified model download, [writeup](docs/WRITEUP.md), [demo script](docs/DEMO.md)
+- [ ] Hand-labeled real-data eval (`scripts/label.py`) and re-run of the LLM fallback eval on the fixed model
