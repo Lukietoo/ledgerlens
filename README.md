@@ -12,17 +12,17 @@ build budgeting, underwriting, or fraud features on top. Ledgerlens is a
 classic-ML pipeline (normalizer → merchant resolver → stacked category model →
 recurring detector), with an LLM planned only as a fallback for low-confidence cases.
 
-**Status:** Weeks 1–3 of 5 are done.
+**Status:** Weeks 1–4 of 5 are done.
 
 | on merchants never seen in training | rules baseline | Ledgerlens |
 |---|---|---|
-| category accuracy | 53.5% | **81.5%** |
-| category macro-F1 | 0.583 | **0.682** |
-| accuracy, leak-free slice ([why](#leakage-check)) | 42.8% | **76.0%** |
-| merchant name exactly right (known chains) | 49.2% | **94.1%** |
+| category accuracy | 53.5% | **81.2%** |
+| category macro-F1 | 0.583 | **0.672** |
+| accuracy, leak-free slice ([why](#leakage-check)) | 42.8% | **75.8%** |
+| merchant name exactly right (known chains) | 50.1% | **94.1%** |
 | throughput (4 workers, M1 laptop) | – | **11.5K txns/s**, p95 38 ms per 100-txn batch |
 | hybrid with Claude Haiku 5.5 fallback (400 unseen txns) | – | **91.2% category / 82.2% merchant**, matching Haiku-only (91.5% / 83.8%) |
-| serving cost per 1M txns | – | ≈ $0.004 model only · **≈ $0.62–1.21 hybrid** (cached) · $26 Haiku-only |
+| serving cost per 1M txns | – | ≈ $0.004 model only · **≈ $0.59–1.15 hybrid** (cached) · $26 Haiku-only |
 
 Synthetic data, mean of 3 seeds. Real hand-labeled numbers: [in progress](#labeling-real-data).
 
@@ -72,6 +72,11 @@ curl -s localhost:8000/v1/enrich -H 'content-type: application/json' -d '{"trans
 | `ledgerlens/llm_eval.py` | LLM-only vs model-only vs hybrid eval (dry-run unless `--yes`) |
 | `ledgerlens/cost.py` | cost per 1M transactions from measured throughput and tokens |
 | `loadtest/locustfile.py` | locust load test against the API |
+| `ledgerlens/statements.py` | bank CSV parser (column aliases, split debit/credit columns) |
+| `ledgerlens/finance.py` | deterministic analytics: spending, recurring, forecast (the agent's tools) |
+| `ledgerlens/agent.py` | Claude finance agent: tool loop, trace, guardrails |
+| `ledgerlens/agent_eval.py` | 42-question agent eval with independent ground truth (dry-run unless `--yes`) |
+| `web/` | Next.js dashboard: decode hero, spending chart, transaction feed, recurring, chat |
 | `ledgerlens/evaluate.py` | metrics on synthetic test split and/or real labeled set |
 | `scripts/label.py` | CLI to hand-label your own bank exports |
 
@@ -116,7 +121,7 @@ Synthetic test split, unseen merchants ([full report](results/baseline_synthetic
 | category accuracy | 53.5% |
 | category macro-F1 | 0.583 |
 | rule coverage (anything matched) | 60.8% |
-| merchant exact match (normalizer only) | 45.5% |
+| merchant exact match (normalizer only) | 46.8% |
 | recurring precision / recall / F1 | 0.977 / 0.888 / **0.930** |
 
 Rules are precise but don't cover enough. 39% of transactions match no rule, and GAS and HOUSING get
@@ -146,15 +151,17 @@ merchants are also hidden from the directory, so LightGBM learns how much to tru
 | model (test split, unseen merchants) | accuracy | macro-F1 | leak-free acc | local merchants |
 |---|---|---|---|---|
 | Rules baseline (week 1) | 53.5% | 0.583 | 42.8% | 44.2% |
-| TF-IDF + logistic regression | 45.1% | 0.362 | 50.4% | 71.3% |
-| LightGBM: text + format + amount | 52.3% ± 0.9 | 0.387 | 58.8% | 80.7% |
-| + user history | 60.9% ± 1.3 | 0.456 | 67.3% | 87.9% |
-| + rules prediction as a feature | 80.8% ± 0.0 | 0.673 | 75.1% | 89.9% |
-| **+ merchant resolver (full model)** | **81.5% ± 0.1** | **0.682** | **76.0%** | 89.8% |
-| full model, first-seen txn (no history) | 73.4% ± 0.6 | 0.637 | 66.4% | 79.1% |
+| TF-IDF + logistic regression | 46.0% | 0.366 | 51.7% | 71.2% |
+| LightGBM: text + format + amount | 51.8% ± 0.4 | 0.396 | 58.2% | 80.4% |
+| + user history | 61.3% ± 0.7 | 0.458 | 65.7% | 88.4% |
+| **+ rules prediction as a feature** | **81.2% ± 0.3** | **0.672** | **75.8%** | 90.9% |
+| + merchant resolver (full model) | 80.5% ± 0.9 | 0.659 | 74.9% | 89.4% |
+| full model, first-seen txn (no history) | 73.1% ± 0.2 | 0.630 | 65.9% | 79.4% |
 
-With the full merchant directory available (production setting), the full model reaches **86.7% ± 3.0**.
-Merchant resolution goes from **45.5% → 82.8%** exact match overall (**94.1%** on known chains).
+With the full merchant directory available (production setting), the full model reaches **86.7% ± 3.2**.
+Merchant resolution goes from **46.8% → 83.5%** exact match overall (**94.1%** on known chains).
+**In the cold regime the resolver is neutral** (80.5% ± 0.9 vs 81.2% ± 0.3 without it, within noise): it can't match
+a merchant the directory doesn't have. It earns its place in the warm regime and in merchant names.
 Inference takes about 25 ms for a small batch on a laptop (see the Week 3 load test).
 
 ### What I learned (the parts worth talking about)
@@ -168,17 +175,19 @@ Inference takes about 25 ms for a small batch on a laptop (see the Week 3 load t
    merchants. It's the honest generalization number, and the model still gains +33 pts there.
 2. **Train/serve skew.** A "how many users share this merchant" feature helped offline but is
    ~1 for a single user's upload at inference. It was removed. **History dropout** (blanking
-   per-user history on 20% of training rows) makes first-seen transactions work: 73.4% with no history at all.
+   per-user history on 20% of training rows) makes first-seen transactions work: 73.1% with no history at all.
 3. **The model learned a bug in my generator.** A smoke test classified a $15.49 Netflix charge as
    DINING. The generator priced every subscription at $x.99, so the model learned ".99 ⟹
    subscription". I fixed the generator to use realistic price endings. Synthetic data needs its own QA.
 4. **Generic payment words fool string matching.** `SOFI TECHNOLOGI PAYROLL` resolved to "ADP" on
    the word PAYROLL. The resolver now ignores payment-type words (PAYROLL, AUTOPAY, PMT...).
-5. **Seed variance is real.** Single runs moved ±1–2 pts. Cold-start results are stable (±0.1);
-   warm-directory results are not (±3.0). That's the next thing to fix.
+5. **Seed variance is real.** Single runs moved ±1–2 pts, enough to flip which of two rows looks best. Warm-directory
+   results vary ±3.2 between seeds. That's the next thing to fix.
 
 Selection caveat: the 80% hide rate was chosen after comparing two settings (50% vs 80%) on the
-test split. At 50%, the resolver *lowered* cold accuracy by 3 pts.
+test split. At 50% the resolver lowered cold accuracy by 3 pts; at 80% it's neutral. An earlier version of this
+README said the full model was best in the cold regime. That stopped being true after the Week 4 city fix,
+so the claim was dropped.
 
 Remaining errors are mostly genuinely ambiguous: renters insurance billed monthly looks like a
 subscription, Dave & Buster's is food *and* entertainment, and a Tesla Supercharger
@@ -208,13 +217,13 @@ single-transaction latency later.
 
 ### When to call the LLM ([routing report](results/week3_routing.md))
 
-The production path reproduces the training numbers (cold 81.6%, warm 85.4%), so there's no train/serve skew.
+The production path reproduces the training numbers (cold 80.6%, warm 85.1%), so there's no train/serve skew.
 Sweeping a confidence threshold:
 
 | route to LLM below 0.8 | traffic routed | model acc on rows it keeps | hybrid ceiling (perfect LLM) |
 |---|---|---|---|
-| cold directory | 21.5% | 87.7% | 90.3% |
-| warm directory | 13.9% | 92.0% | 93.1% |
+| cold directory | 22.8% | 88.7% | 91.2% |
+| warm directory | 15.7% | 92.7% | 93.9% |
 
 **Limit of confidence routing:** the model is somewhat overconfident (ECE ≈ 0.07). The 0.9–1.0 bin holds
 most of the traffic at 89% accuracy (cold), so a *confident* mistake (renters insurance → SUBSCRIPTIONS)
@@ -246,7 +255,8 @@ never reaches the LLM. Better calibration, or routing on "merchant not in direct
 | hybrid v2 variant: also take the LLM's category on those rows | 89.2% [85.8–91.9] | 82.2% [78.2–85.7] | 190 merchant keys |
 
 0 refusals and 0 unparseable responses. Both runs together cost $0.02.
-Unique descriptions over-weight hard, rare rows, which is why model-only reads 76.5% here vs 81.6% on all traffic.
+Unique descriptions over-weight hard, rare rows, which is why model-only reads 76.5% here vs ~81% on all traffic.
+**This eval ran on the model from before the Week 4 city fix** (re-running it costs ~$0.02 and needs an API key).
 Hybrid v1 first measured 92.0% with one LLM answer per *description*. It now uses one answer per *merchant key*
 (cached), which reads 91.2%; that difference is within noise.
 
@@ -264,16 +274,16 @@ Hybrid v1 first measured 92.0% with one LLM answer per *description*. It now use
 ### Cost per 1M transactions ([cost report](results/week3_cost.md))
 
 LLM answers are cached per merchant key (cleaned merchant + money in/out), so a merchant costs one call the
-first time it's seen and nothing after. Over a year of test traffic that's **4.7 LLM calls per 100 txns
-(cold) / 2.4 (warm)** for hybrid v2, even though it *routes* 96% / 35% of rows.
+first time it's seen and nothing after. Over a year of test traffic that's **4.4 LLM calls per 100 txns
+(cold) / 2.3 (warm)** for hybrid v2, even though it *routes* 96% / 35% of rows.
 
 | | per 1M txns |
 |---|---|
 | Ledgerlens model only (measured throughput, assumes $0.04/vCPU-hour) | **≈ $0.004** |
-| **hybrid v2 + cache, Haiku 5.5** (measured tokens: 103 in / 31 out per txn) | **≈ $0.62 warm / $1.21 cold** |
-| hybrid v1 without cache, Haiku 5.5 | ≈ $3.60 / $5.60 |
+| **hybrid v2 + cache, Haiku 5.5** (measured tokens: 103 in / 31 out per txn) | **≈ $0.59 warm / $1.15 cold** |
+| hybrid v1 without cache, Haiku 5.5 | ≈ $4.08 / $5.92 |
 | Haiku 5.5 only | ≈ $26 |
-| hybrid v2 + cache / LLM-only, Opus 5.5 | ≈ $33–64 / $1,381 (est.) |
+| hybrid v2 + cache / LLM-only, Opus 5.5 | ≈ $31–61 / $1,381 (est.) |
 
 (est.) = token counts estimated before any API call. Cache rates come from 300 synthetic users; real traffic from
 more users repeats merchants more, so they're conservative. Re-run with a different model:
@@ -283,6 +293,60 @@ more users repeats merchants more, so they're conservative. Re-run with a differ
 .venv/bin/python -m ledgerlens.llm_eval --yes --model claude-haiku-5-5       # ~$0.02 for 400 txns
 .venv/bin/python -m ledgerlens.cost                                          # re-prices with measured tokens
 ```
+
+## Week 4: dashboard + finance agent
+
+```bash
+.venv/bin/uvicorn ledgerlens.service:app --workers 1     # API on :8000 (chat needs ANTHROPIC_API_KEY)
+cd web && npm install && npm run dev                      # dashboard on :3000, proxies /api -> :8000
+```
+
+**Dashboard** ([web/](web/src/app/page.tsx), Next.js 15 + Tailwind + Recharts). Upload a bank CSV or load a
+demo account (one synthetic user, 12 months, deterministic so the demo video is reproducible). It shows:
+- a hero that decodes a real line from the statement (`SQ *BLUE BTL COF` → Blue Bottle Coffee),
+- spending by month, stacked by category,
+- the transaction feed: the bank's raw text under each clean merchant, an amber "Claude" tag where the LLM
+  named it, and an "unsure" tag below the confidence threshold,
+- subscriptions, bills, and next month's forecast,
+- a chat panel.
+
+Uploaded statements are held **in memory only** (bounded store, oldest evicted), never written to disk or logged.
+Because of that, the dataset endpoints need a single worker; scaling out would need a shared store (Redis).
+
+**Agent** ([agent.py](ledgerlens/agent.py)). Claude with six tools over deterministic pandas analytics
+([finance.py](ledgerlens/finance.py)): overview, spending by category, monthly spending, transaction search,
+recurring charges, and a cash-flow forecast.
+- **The model never does arithmetic.** Every number in an answer comes from a tool, and the chat panel shows
+  which calculations ran.
+- Strict tool schemas. Refusal fallbacks on.
+- Transaction text is treated as data: a Venmo memo saying "ignore previous instructions" is not an instruction.
+- "Spending" excludes transfers (card payments, P2P, brokerage) to avoid double counting.
+- A hand-written tool loop rather than the SDK's beta tool runner, because the UI needs a per-call trace and the
+  tests inject a scripted fake client.
+
+**Agent eval** ([agent_eval.py](ledgerlens/agent_eval.py), 42 questions). Spend by category and month,
+merchant totals and visit counts, monthly averages, income, the biggest purchase, peak months, subscriptions,
+rent and the forecast. Ground truth is computed with plain pandas, **independently of the agent's tools**, so a
+buggy tool can't grade itself correct. Grading: the exact figure (within max($0.50, 0.5%)), count, merchant
+or month must appear in the reply.
+
+```bash
+.venv/bin/python -m ledgerlens.agent_eval                                 # dry run: writes questions, estimates cost
+.venv/bin/python -m ledgerlens.agent_eval --yes --model claude-haiku-5-5  # ~$0.04; Opus 5.5 ~$1.50
+```
+
+**Results: not run yet.** The eval needs Anthropic credentials (about $0.04 on Haiku 5.5). The question set is
+committed in [results/week4_agent_questions.json](results/week4_agent_questions.json); results will land in
+`results/week4_agent_<model>.md`.
+
+### Bugs this week's end-to-end check caught
+
+- **A Week 1 normalizer bug.** 9 of 71 gazetteer cities (New York, Dallas, Minneapolis...) sat at a line break
+  in the source string and kept their indentation, so they never matched. In the dashboard, a pilates studio,
+  a gas station and a café in New York all resolved to "New York Times". Fixed, regression-tested, and every
+  offline number in this README re-run.
+- **Card autopay counted as a subscription.** A monthly transfer looked recurring; it's now excluded, since it
+  pays for spending already counted.
 
 ## Labeling real data
 
@@ -304,5 +368,5 @@ This is the number founders will ask about.
 - [x] **Week 2**: merchant resolver, stacked TF-IDF + LightGBM category model, ablations, leakage audit
 - [x] **Week 3**: FastAPI serving, locust load test, confidence routing, LLM fallback (measured on Haiku 5.5), cost per 1M transactions
   - [x] route "merchant not in directory" rows to the LLM too, with a per-merchant cache (merchant accuracy 52.8% → 82.2%)
-- [ ] **Week 4**: Next.js dashboard + Claude tool-calling finance agent with eval set
+- [x] **Week 4**: Next.js dashboard + Claude tool-calling finance agent with eval set
 - [ ] **Week 5**: deploy, writeup, demo video
