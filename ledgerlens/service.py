@@ -9,6 +9,8 @@ POST /v1/datasets/demo                load a synthetic demo user
 GET  /v1/datasets/{id}/dashboard      totals, monthly by category, recurring, forecast
 GET  /v1/datasets/{id}/transactions   enriched feed (search, category filter, paging)
 POST /v1/datasets/{id}/chat           finance agent (Claude + tools); needs credentials
+GET  /v1/datasets/{id}/review         merchants worth a human look, most valuable first
+POST /v1/datasets/{id}/corrections    fix a merchant's name/category everywhere it appears
 
 LLM fallback is off unless LEDGERLENS_LLM=1, and then only if the Anthropic client
 can find credentials (ANTHROPIC_API_KEY or an `ant auth login` profile).
@@ -96,7 +98,7 @@ async def lifespan(app: FastAPI):
     app.state.agent_client = None
     # public-deploy guards (see guards.py); generous defaults for local use
     app.state.limits = {name: RateLimiter(int(os.environ.get(f"LEDGERLENS_{name.upper()}_PER_MIN", default)))
-                        for name, default in (("chat", 8), ("upload", 5), ("demo", 20))}
+                        for name, default in (("chat", 8), ("upload", 5), ("demo", 20), ("correct", 60))}
     app.state.budget = DailyBudget(float(os.environ.get("LEDGERLENS_DAILY_LLM_BUDGET_USD", "2.00")))
     app.state.allow_uploads = os.environ.get("LEDGERLENS_ALLOW_UPLOADS", "1") != "0"
     yield
@@ -284,7 +286,7 @@ def transactions(dataset_id: str, request: Request, q: str | None = None, catego
     d = d.sort_values("date", ascending=False)
     page = d.iloc[offset:offset + limit]
     cols = ["date", "description", "merchant", "category", "amount", "confidence", "source",
-            "merchant_in_directory", "is_recurring"]
+            "merchant_in_directory", "is_recurring", "merchant_key"]
     page = page[[c for c in cols if c in page.columns]].copy()
     page["date"] = page["date"].dt.date.astype(str)
     return {"total": int(len(d)), "rows": page.to_dict(orient="records")}
@@ -341,3 +343,32 @@ def chat(dataset_id: str, req: ChatRequest, request: Request) -> dict:
             "trace": [t.__dict__ for t in r.trace], "seconds": r.seconds,
             "usage": {"input_tokens": r.input_tokens, "output_tokens": r.output_tokens,
                       "cost_usd": round(r.cost_usd(), 5)}}
+
+
+
+# ---------------------------------------------------------------- corrections
+
+
+class CorrectionRequest(BaseModel):
+    merchant_key: str = Field(min_length=1, max_length=300)
+    merchant: str | None = Field(default=None, min_length=1, max_length=80)
+    category: Literal[CATEGORIES] | None = None  # type: ignore[valid-type]
+
+
+@app.get("/v1/datasets/{dataset_id}/review")
+def review(dataset_id: str, request: Request, limit: int = Query(8, ge=1, le=50)) -> dict:
+    return {"items": _ledger(request, dataset_id).review_queue(limit)}
+
+
+@app.post("/v1/datasets/{dataset_id}/corrections")
+def correct(dataset_id: str, req: CorrectionRequest, request: Request) -> dict:
+    ledger = _ledger(request, dataset_id)
+    request.app.state.limits["correct"].check(client_id(request))
+    if req.merchant is None and req.category is None:
+        raise HTTPException(422, "give a merchant name, a category, or both")
+    try:
+        n = ledger.apply_correction(req.merchant_key, merchant=req.merchant.strip() if req.merchant else None,
+                                    category=req.category)
+    except KeyError as e:
+        raise HTTPException(404, "no transactions with that merchant key in this dataset") from e
+    return {"updated": n, "merchant_key": req.merchant_key, "merchant": req.merchant, "category": req.category}

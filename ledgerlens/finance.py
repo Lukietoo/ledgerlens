@@ -12,12 +12,14 @@ Definitions (also given to the agent):
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+import threading
+from dataclasses import dataclass, field
 
 import numpy as np
 import pandas as pd
 
 from ledgerlens.normalize import canon
+from ledgerlens.taxonomy import CATEGORIES
 
 BILL_CATEGORIES = {"UTILITIES", "HOUSING", "LOANS"}
 NOT_SPENDING = {"TRANSFER"}
@@ -32,6 +34,8 @@ class Ledger:
     """One person's enriched transactions: date, description, amount, merchant, category, is_recurring."""
 
     df: pd.DataFrame
+    corrections: dict[str, dict] = field(default_factory=dict)  # merchant_key -> what the user set
+    _lock: threading.Lock = field(default_factory=threading.Lock, repr=False, compare=False)
 
     def __post_init__(self):
         df = self.df.copy()
@@ -195,6 +199,68 @@ class Ledger:
             "expected_monthly_net": _money(net),
             "months_ahead": months_ahead, "expected_net_over_period": _money(net * months_ahead),
         }
+
+    # ---------------------------------------------------------------- user corrections
+    def apply_correction(self, merchant_key: str, merchant: str | None = None,
+                         category: str | None = None) -> int:
+        """Fix one merchant everywhere it appears: every row with this merchant key (same cleaned
+        merchant, same direction of money) gets the new name and/or category. Returns rows changed."""
+        if merchant is None and category is None:
+            raise ValueError("give a merchant name, a category, or both")
+        if category is not None and category not in CATEGORIES:
+            raise ValueError(f"unknown category {category!r}")
+        if "merchant_key" not in self.df:
+            raise ValueError("this ledger has no merchant keys (enrich it with the pipeline first)")
+        with self._lock:
+            rows = self.df["merchant_key"] == merchant_key
+            n = int(rows.sum())
+            if n == 0:
+                raise KeyError(merchant_key)
+            if merchant is not None:
+                self.df.loc[rows, "merchant"] = merchant
+            if category is not None:
+                self.df.loc[rows, "category"] = category
+            self.df.loc[rows, "source"] = "user"
+            if "confidence" in self.df:
+                self.df.loc[rows, "confidence"] = 1.0
+            d = self.df.loc[rows]
+            self.df.loc[rows, "is_spend"] = (d["amount"] < 0) & ~d["category"].isin(NOT_SPENDING)
+            self.df.loc[rows, "is_income"] = (d["amount"] > 0) & (d["category"] == "INCOME")
+            prev = self.corrections.get(merchant_key, {})
+            self.corrections[merchant_key] = {
+                "merchant": merchant if merchant is not None else prev.get("merchant"),
+                "category": category if category is not None else prev.get("category"),
+                "rows": n,
+            }
+        return n
+
+    def review_queue(self, limit: int = 8) -> list[dict]:
+        """Merchants worth a human look, most valuable first: rows affected x how unsure the model is
+        (plus a bump for merchants missing from the directory, whose names are guesses)."""
+        d = self.df
+        if "merchant_key" not in d or "confidence" not in d:
+            return []
+        d = d[d.get("source", pd.Series("model", index=d.index)) != "user"]
+        if d.empty:
+            return []
+        unknown = ~d["merchant_in_directory"].astype(bool) if "merchant_in_directory" in d else False
+        g = d.assign(doubt=1 - d["confidence"], unknown=unknown).groupby("merchant_key")
+        q = pd.DataFrame({
+            "rows": g.size(),
+            "mean_confidence": g["confidence"].mean(),
+            "doubt": g["doubt"].sum(),
+            "unknown_share": g["unknown"].mean(),
+            "merchant": g["merchant"].agg(lambda s: s.mode().iloc[0]),
+            "category": g["category"].agg(lambda s: s.mode().iloc[0]),
+            "example": g["description"].first(),
+            "total": g["amount"].sum(),
+        })
+        q["score"] = q["doubt"] + 0.25 * q["rows"] * q["unknown_share"]
+        q = q[(q["mean_confidence"] < 0.9) | (q["unknown_share"] > 0)].sort_values("score", ascending=False)
+        return [{"merchant_key": k, "merchant": r.merchant, "category": r.category, "rows": int(r.rows),
+                 "mean_confidence": round(float(r.mean_confidence), 3), "example": r.example,
+                 "total": _money(r.total), "score": round(float(r.score), 3)}
+                for k, r in q.head(max(1, min(int(limit), 50))).iterrows()]
 
     # ---------------------------------------------------------------- dashboard
     def dashboard(self) -> dict:
