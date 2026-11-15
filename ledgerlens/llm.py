@@ -111,6 +111,10 @@ class LLMClassifier:
         self.max_tokens = max_tokens
         self.refusal_fallbacks = refusal_fallbacks
         self.usage = Usage()
+        # merchant key -> answer. Unbounded and in-process: fine for one service instance;
+        # production would back this with Redis/Postgres and write confirmed names into the directory.
+        self.cache: dict[str, Prediction] = {}
+        self.cache_hits = 0
 
     @staticmethod
     def render(batch: list[Txn]) -> str:
@@ -131,6 +135,18 @@ class LLMClassifier:
         if self.refusal_fallbacks:
             kwargs.update(betas=["server-side-fallback-2026-07-01"], fallbacks="default")
         return self.client.beta.messages.create(**kwargs)
+
+    def classify_keyed(self, items: dict[str, Txn]) -> dict[str, Prediction]:
+        """Classify one representative txn per key, answering repeats from the cache.
+        Keys the LLM refused or skipped are absent from the result (and not cached)."""
+        hits = {k: self.cache[k] for k in items if k in self.cache}
+        self.cache_hits += len(hits)
+        todo = [k for k in items if k not in self.cache]
+        for k, pred in zip(todo, self.classify([items[k] for k in todo])):
+            if pred is not None:
+                self.cache[k] = pred
+                hits[k] = pred
+        return hits
 
     def classify(self, txns: list[Txn]) -> list[Prediction | None]:
         """One prediction per input; None where the LLM refused or skipped a row."""

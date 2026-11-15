@@ -9,6 +9,7 @@ Returns one row per input with merchant, category, confidence, recurring flag an
 from __future__ import annotations
 
 from collections.abc import Collection
+from dataclasses import dataclass
 from pathlib import Path
 
 import joblib
@@ -25,23 +26,67 @@ DEFAULT_PATH = Path("models/enricher.joblib")
 DEFAULT_LLM_THRESHOLD = 0.8  # see results/week3_routing.md: ~14-22% of traffic routed
 
 
-def apply_llm_fallback(enriched: pd.DataFrame, classifier: LLMClassifier,
-                       threshold: float = DEFAULT_LLM_THRESHOLD) -> pd.DataFrame:
-    """Re-classify rows whose model confidence is below ``threshold`` with the LLM.
+@dataclass(frozen=True)
+class RoutingPolicy:
+    """Which rows go to the LLM, and which of its answers we keep.
 
-    Adds a ``source`` column ("model" | "llm"). The LLM's merchant name is only used when
-    the resolver didn't find the merchant in the directory (the directory is authoritative).
+    threshold:        rows with model confidence below this are routed
+    unknown_merchants: also route rows whose merchant isn't in the directory
+                       (the model often gets their *category* right but can only
+                       echo the cleaned descriptor as a *name*)
+    category_for:     "low_confidence" -> take the LLM's category only on low-confidence rows
+                      "routed"         -> take it on every routed row
     """
+
+    threshold: float = DEFAULT_LLM_THRESHOLD
+    unknown_merchants: bool = True
+    category_for: str = "low_confidence"
+
+    def __post_init__(self):
+        assert self.category_for in ("low_confidence", "routed"), self.category_for
+
+
+CONFIDENCE_ONLY = RoutingPolicy(unknown_merchants=False, category_for="routed")  # week-3 behavior
+# Default RoutingPolicy() is "names only": measured best on Haiku 5.5 (91.2% category / 82.2% merchant vs
+# 91.2% / 52.8% confidence-only, 89.2% / 82.2% when also taking the LLM's category on confident rows).
+
+
+def routed_mask(enriched: pd.DataFrame, policy: RoutingPolicy) -> tuple[np.ndarray, np.ndarray]:
+    low = enriched["confidence"].to_numpy() < policy.threshold
+    unknown = ~enriched["merchant_in_directory"].to_numpy(dtype=bool)
+    return (low | unknown) if policy.unknown_merchants else low, low
+
+
+def apply_llm_fallback(enriched: pd.DataFrame, classifier: LLMClassifier,
+                       policy: RoutingPolicy | float = RoutingPolicy()) -> pd.DataFrame:
+    """Send routed rows to the LLM (one call per *merchant key*, cached across calls).
+
+    Adds ``source`` ("model" | "llm"). The LLM's merchant name is only used when the
+    resolver didn't find the merchant in the directory (the directory is authoritative).
+    A float ``policy`` means the week-3 confidence-only policy at that threshold.
+    """
+    if not isinstance(policy, RoutingPolicy):
+        policy = RoutingPolicy(threshold=float(policy), unknown_merchants=False, category_for="routed")
     out = enriched.copy()
     out["source"] = "model"
-    routed = np.flatnonzero(out["confidence"].to_numpy() < threshold)
-    if len(routed) == 0:
+    routed, low = routed_mask(out, policy)
+    idx = np.flatnonzero(routed)
+    if len(idx) == 0:
         return out
-    txns = [Txn(out.at[i, "description"], float(out.at[i, "amount"]), hint=out.at[i, "category"]) for i in routed]
-    for i, pred in zip(routed, classifier.classify(txns)):
+    # one representative row per merchant key; the classifier's cache dedupes across calls too
+    reps: dict[str, int] = {}
+    for i in idx:
+        reps.setdefault(out.at[i, "merchant_key"], i)
+    answers = classifier.classify_keyed({
+        k: Txn(out.at[i, "description"], float(out.at[i, "amount"]), hint=out.at[i, "category"])
+        for k, i in reps.items()
+    })
+    for i in idx:
+        pred = answers.get(out.at[i, "merchant_key"])
         if pred is None:
             continue  # refusal / skipped: keep the model's answer
-        out.at[i, "category"] = pred.category
+        if low[i] or policy.category_for == "routed":
+            out.at[i, "category"] = pred.category
         if not out.at[i, "merchant_in_directory"] and pred.merchant:
             out.at[i, "merchant"] = pred.merchant
         out.at[i, "source"] = "llm"
@@ -76,6 +121,9 @@ class Enricher:
             "amount": df["amount"],
             "merchant": np.where(known, res["res_top1_merchant"], df["clean"].map(display_name)),
             "merchant_in_directory": known,
+            # cache key for LLM answers: same cleaned merchant + same direction of money.
+            # Sign matters: "UC BERKELEY" outgoing is tuition, incoming is payroll.
+            "merchant_key": df["key"] + np.where(df["amount"].to_numpy() > 0, "|in", "|out"),
             "category": self.lgbm.classes_[proba.argmax(1)],
             "confidence": proba.max(1).round(4),
             "is_recurring": feats["hist_rule_recurring"].astype(bool),

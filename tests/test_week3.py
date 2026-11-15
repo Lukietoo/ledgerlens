@@ -9,7 +9,7 @@ from fastapi.testclient import TestClient
 
 from ledgerlens import cost, llm_eval, routing, train
 from ledgerlens.llm import PRICES, RESPONSE_SCHEMA, LLMClassifier, Txn
-from ledgerlens.pipeline import Enricher, apply_llm_fallback
+from ledgerlens.pipeline import CONFIDENCE_ONLY, Enricher, RoutingPolicy, apply_llm_fallback
 from ledgerlens.synth import Simulator, write_csv
 from ledgerlens.taxonomy import CATEGORIES
 
@@ -77,19 +77,75 @@ def model_path(tmp_path_factory):
     return path
 
 
-def test_apply_llm_fallback_routes_only_low_confidence(model_path):
-    enriched = Enricher.load(model_path).enrich(pd.DataFrame({
-        "description": ["NETFLIX.COM 866-579-7172 CA", "SQ *MYSTERY PLACE OAKLAND CA"],
-        "amount": [-15.49, -12.0], "date": ["2026-03-01", "2026-03-02"]}))
-    enriched.loc[0, "confidence"], enriched.loc[1, "confidence"] = 0.99, 0.30
+@pytest.fixture
+def enriched(model_path):
+    out = Enricher.load(model_path).enrich(pd.DataFrame({
+        "description": ["NETFLIX.COM 866-579-7172 CA", "SQ *MYSTERY PLACE OAKLAND CA",
+                        "SQ *GOLDEN OWL KITCHEN OAKLAND CA", "SQ *GOLDEN OWL KITCHEN BERKELEY CA"],
+        "amount": [-15.49, -12.0, -30.0, -18.0],
+        "date": ["2026-03-01", "2026-03-02", "2026-03-03", "2026-03-04"]}))
+    assert out.loc[0, "merchant_in_directory"] and not out.loc[1:, "merchant_in_directory"].any()
+    out.loc[:, "confidence"] = [0.99, 0.30, 0.95, 0.95]  # known+confident, unknown+unsure, unknown+confident x2
+    out.loc[:, "category"] = ["SUBSCRIPTIONS", "DINING", "DINING", "DINING"]
+    return out
+
+
+def test_confidence_only_policy(enriched):
     client = fake_client(category="ENTERTAINMENT")
-    out = apply_llm_fallback(enriched, LLMClassifier(client), threshold=0.8)
-    assert list(out["source"]) == ["model", "llm"]
-    assert out.loc[1, "category"] == "ENTERTAINMENT"
+    out = apply_llm_fallback(enriched, LLMClassifier(client), CONFIDENCE_ONLY)
+    assert list(out["source"]) == ["model", "llm", "model", "model"]
+    assert out.loc[1, "category"] == "ENTERTAINMENT" and out.loc[1, "merchant"] == "M0"
     assert out.loc[0, "merchant"] == "Netflix"  # directory merchant never overwritten
-    assert out.loc[1, "merchant"] == "M0"  # not in directory: LLM name used
-    assert "MYSTERY" in client.beta.messages.calls[0]["messages"][0]["content"]
-    assert "NETFLIX" not in client.beta.messages.calls[0]["messages"][0]["content"]
+    sent = client.beta.messages.calls[0]["messages"][0]["content"]
+    assert "MYSTERY" in sent and "NETFLIX" not in sent
+    # a bare float still means the week-3 policy
+    assert list(apply_llm_fallback(enriched, LLMClassifier(fake_client()), 0.8)["source"]) == list(out["source"])
+
+
+def test_unknown_merchant_policy_names_only(enriched):
+    client = fake_client(category="ENTERTAINMENT")
+    out = apply_llm_fallback(enriched, LLMClassifier(client), RoutingPolicy())
+    assert list(out["source"]) == ["model", "llm", "llm", "llm"]
+    assert out.loc[1, "category"] == "ENTERTAINMENT"  # low confidence: LLM category
+    assert list(out.loc[2:, "category"]) == ["DINING", "DINING"]  # confident: model category kept
+    assert out.loc[2, "merchant"] == out.loc[3, "merchant"] != "Golden Owl Kitchen"  # LLM name, shared key
+    # same merchant in two cities is one merchant key -> one LLM row, not two
+    sent = client.beta.messages.calls[0]["messages"][0]["content"]
+    assert sent.count("GOLDEN OWL") == 1
+
+
+def test_unknown_merchant_policy_with_categories(enriched):
+    out = apply_llm_fallback(enriched, LLMClassifier(fake_client(category="ENTERTAINMENT")),
+                             RoutingPolicy(category_for="routed"))
+    assert list(out["category"]) == ["SUBSCRIPTIONS", "ENTERTAINMENT", "ENTERTAINMENT", "ENTERTAINMENT"]
+
+
+def test_cache_across_calls_and_refusals_not_cached(enriched):
+    client = fake_client(refuse_on_call=1)
+    clf = LLMClassifier(client)
+    first = apply_llm_fallback(enriched, clf, RoutingPolicy())
+    assert set(first["source"]) == {"model"} and clf.cache == {}  # refused: nothing applied or cached
+    apply_llm_fallback(enriched, clf, RoutingPolicy())  # retried, now answered
+    n_calls = len(client.beta.messages.calls)
+    again = apply_llm_fallback(enriched, clf, RoutingPolicy())
+    assert len(client.beta.messages.calls) == n_calls  # all from cache
+    assert clf.cache_hits >= 2 and list(again["source"]) == ["model", "llm", "llm", "llm"]
+
+
+def test_merchant_key_separates_money_direction(model_path):
+    out = Enricher.load(model_path).enrich(pd.DataFrame({
+        "description": ["UC BERKELEY PAYROLL PPD ID: 1", "UC BERKELEY PAYROLL PPD ID: 1"],
+        "amount": [2000.0, -2000.0], "date": ["2026-03-01", "2026-03-02"]}))
+    assert out.loc[0, "merchant_key"] != out.loc[1, "merchant_key"]
+
+
+def test_policy_traffic(enriched):
+    correct = np.array([True, False, True, False])
+    p = routing.policy_traffic(enriched, correct, RoutingPolicy())
+    assert p["routed_rows"] == 0.75
+    assert p["unique_keys_routed"] == 2 and p["llm_calls_per_txn_cached"] == 0.5
+    assert p["share_unknown_confident"] == 0.5 and p["model_acc_unknown_confident"] == 0.5
+    assert routing.policy_traffic(enriched, correct, CONFIDENCE_ONLY)["routed_rows"] == 0.25
 
 
 def test_service(model_path, monkeypatch):

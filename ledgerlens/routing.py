@@ -17,7 +17,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from ledgerlens.pipeline import Enricher
+from ledgerlens.pipeline import CONFIDENCE_ONLY, Enricher, RoutingPolicy, routed_mask
 
 THRESHOLDS = [0.0, 0.5, 0.6, 0.7, 0.8, 0.85, 0.9, 0.95, 0.98]
 
@@ -49,6 +49,28 @@ def calibration(confidence: np.ndarray, correct: np.ndarray, bins: int = 10) -> 
     return rows
 
 
+def policy_traffic(out: pd.DataFrame, correct: np.ndarray, policy: RoutingPolicy) -> dict:
+    """Share of rows a policy routes, and the share that actually costs an LLM call when
+    answers are cached per merchant key (first sighting pays, repeats are free)."""
+    routed, low = routed_mask(out, policy)
+    keys = out.loc[routed, "merchant_key"]
+    unknown_confident = routed & ~low
+    return {
+        "routed_rows": float(routed.mean()),
+        "llm_calls_per_txn_cached": float(keys.nunique() / len(out)),
+        "unique_keys_routed": int(keys.nunique()),
+        # how good is the model's own category on rows routed only for a name?
+        "model_acc_unknown_confident": float(correct[unknown_confident].mean()) if unknown_confident.any() else None,
+        "share_unknown_confident": float(unknown_confident.mean()),
+    }
+
+
+POLICIES = {
+    "confidence < 0.8 (week 3)": CONFIDENCE_ONLY,
+    "confidence < 0.8 OR merchant not in directory": RoutingPolicy(),
+}
+
+
 def ece(cal: list[dict]) -> float:
     n = sum(r["n"] for r in cal)
     return sum(r["n"] / n * abs(r["accuracy"] - r["mean_conf"]) for r in cal)
@@ -71,7 +93,8 @@ def main() -> None:
         conf = out["confidence"].to_numpy()
         cal = calibration(conf, correct)
         report[regime] = {"accuracy": float(correct.mean()), "curve": coverage_curve(conf, correct),
-                          "calibration": cal, "ece": ece(cal)}
+                          "calibration": cal, "ece": ece(cal),
+                          "policies": {name: policy_traffic(out, correct, p) for name, p in POLICIES.items()}}
         print(f"{regime}: accuracy {correct.mean():.3f}, ECE {ece(cal):.3f}")
 
     args.results.mkdir(parents=True, exist_ok=True)
@@ -95,6 +118,13 @@ def to_markdown(r: dict, n: int) -> str:
         L += ["", "Calibration (confidence bin → accuracy):", "", "| bin | n | mean confidence | accuracy |",
               "|---|---|---|---|"]
         L += [f"| {c['bin']} | {c['n']:,} | {c['mean_conf']:.2f} | {c['accuracy']:.1%} |" for c in x["calibration"]]
+        L += ["", "Routing policies (LLM calls assume answers are cached per merchant key):", "",
+              "| policy | rows routed | LLM calls per txn (cached) | rows routed only for a name "
+              "| model category acc on those |", "|---|---|---|---|---|"]
+        for name, p in x["policies"].items():
+            acc = "–" if p["model_acc_unknown_confident"] is None else f"{p['model_acc_unknown_confident']:.1%}"
+            L.append(f"| {name} | {p['routed_rows']:.1%} | {p['llm_calls_per_txn_cached']:.2%} | "
+                     f"{p['share_unknown_confident']:.1%} | {acc} |")
         L.append("")
     L.append("Hybrid ceiling = accuracy if the LLM got every routed row right. Measured hybrid numbers: week3_llm.md.")
     return "\n".join(L) + "\n"

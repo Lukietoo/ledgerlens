@@ -52,6 +52,10 @@ def main() -> None:
               for reg in ("cold", "warm")}
     ceiling = {reg: next(c["hybrid_upper_bound"] for c in routing[reg]["curve"]
                          if c["threshold"] == DEFAULT_LLM_THRESHOLD) for reg in ("cold", "warm")}
+    # LLM calls per txn with answers cached per merchant key (routing.py, full test traffic)
+    cached_calls = {reg: {name: p["llm_calls_per_txn_cached"] for name, p in routing[reg]["policies"].items()}
+                    for reg in ("cold", "warm")}
+    new_policy = "confidence < 0.8 OR merchant not in directory"
 
     rows = []
     for model, (pin, pout) in PRICES.items():
@@ -60,11 +64,13 @@ def main() -> None:
         rows.append({"model": model, "tokens_in": tin, "tokens_out": tout, "measured": measured,
                      "llm_only_per_1m": per_m,
                      "hybrid_cold_per_1m": model_cost + routed["cold"] * per_m,
-                     "hybrid_warm_per_1m": model_cost + routed["warm"] * per_m})
+                     "hybrid_warm_per_1m": model_cost + routed["warm"] * per_m,
+                     "cached_new_policy_cold_per_1m": model_cost + cached_calls["cold"][new_policy] * per_m,
+                     "cached_new_policy_warm_per_1m": model_cost + cached_calls["warm"][new_policy] * per_m})
 
     report = {"throughput_txn_per_s": tps, "workers": args.workers, "vcpu_hour_usd_assumption": args.vcpu_hour_usd,
               "model_only_per_1m": model_cost, "routed_share": routed, "hybrid_ceiling": ceiling,
-              "threshold": DEFAULT_LLM_THRESHOLD, "llm": rows}
+              "cached_llm_calls_per_txn": cached_calls, "threshold": DEFAULT_LLM_THRESHOLD, "llm": rows}
     (args.results / "week3_cost.json").write_text(json.dumps(report, indent=2))
     md = to_markdown(report)
     (args.results / "week3_cost.md").write_text(md)
@@ -78,14 +84,19 @@ def to_markdown(r: dict) -> str:
          f"(assumes ${r['vcpu_hour_usd_assumption']}/vCPU-hour).", "",
          f"Hybrid routes rows below confidence {r['threshold']} to the LLM: "
          f"{r['routed_share']['cold']:.1%} of traffic (cold directory) / {r['routed_share']['warm']:.1%} (warm).", "",
-         "| LLM | tokens/txn in / out | LLM-only per 1M | hybrid per 1M (cold) | hybrid per 1M (warm) "
-         "| LLM-only ÷ model-only |",
-         "|---|---|---|---|---|---|"]
+         "| LLM | tokens/txn in / out | LLM-only | hybrid, no cache (cold / warm) "
+         "| hybrid + unknown merchants + cache (cold / warm) |",
+         "|---|---|---|---|---|"]
     for x in r["llm"]:
         flag = "" if x["measured"] else " (est.)"
-        L.append(f"| {x['model']} | {x['tokens_in']:.0f} / {x['tokens_out']:.0f}{flag} | ${x['llm_only_per_1m']:,.0f} | "
-                 f"${x['hybrid_cold_per_1m']:,.0f} | ${x['hybrid_warm_per_1m']:,.0f} | "
-                 f"{x['llm_only_per_1m'] / r['model_only_per_1m']:,.0f}× |")
+        L.append(f"| {x['model']} | {x['tokens_in']:.0f} / {x['tokens_out']:.0f}{flag} | ${x['llm_only_per_1m']:,.2f} | "
+                 f"${x['hybrid_cold_per_1m']:,.2f} / ${x['hybrid_warm_per_1m']:,.2f} | "
+                 f"${x['cached_new_policy_cold_per_1m']:,.2f} / ${x['cached_new_policy_warm_per_1m']:,.2f} |")
+    c = r["cached_llm_calls_per_txn"]
+    L += ["", "All costs per 1M transactions. Cached LLM calls per 100 txns (one call per new merchant key, "
+          f"measured over a year of test traffic): {c['cold']['confidence < 0.8 OR merchant not in directory'] * 100:.2f} "
+          f"cold / {c['warm']['confidence < 0.8 OR merchant not in directory'] * 100:.2f} warm. "
+          "Real traffic from more users repeats merchants more, so this is conservative."]
     L += ["", "(est.) = tokens estimated before any API call (≈4 chars/token, pessimistic output); "
           "run `python -m ledgerlens.llm_eval --yes --model <m>` to replace with measured usage.",
           "Standard API rates; the Batch API would halve LLM costs for non-real-time backfills.", ""]
