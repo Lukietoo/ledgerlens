@@ -1,0 +1,44 @@
+{
+  "throughput_txn_per_s": 11495.976130129297,
+  "workers": 4,
+  "vcpu_hour_usd_assumption": 0.04,
+  "model_only_per_1m": 0.0038660870500558855,
+  "routed_share": {
+    "cold": 0.21548939142582735,
+    "warm": 0.13869728455426522
+  },
+  "hybrid_ceiling": {
+    "cold": 0.9034750720335283,
+    "warm": 0.9314590063738758
+  },
+  "threshold": 0.8,
+  "llm": [
+    {
+      "model": "claude-opus-5-5",
+      "tokens_in": 45.37,
+      "tokens_out": 60,
+      "measured": false,
+      "llm_only_per_1m": 1381.48,
+      "hybrid_cold_per_1m": 297.698150554002,
+      "hybrid_warm_per_1m": 191.61139075307636
+    },
+    {
+      "model": "claude-sonnet-5-5",
+      "tokens_in": 45.37,
+      "tokens_out": 60,
+      "measured": false,
+      "llm_only_per_1m": 690.74,
+      "hybrid_cold_per_1m": 148.85100832052603,
+      "hybrid_warm_per_1m": 95.80762842006321
+    },
+    {
+      "model": "claude-haiku-5-5",
+      "tokens_in": 45.37,
+      "tokens_out": 60,
+      "measured": false,
+      "llm_only_per_1m": 34.537,
+      "hybrid_cold_per_1m": 7.446223198723854,
+      "hybrid_warm_per_1m": 4.794054203700713
+    }
+  ]
+}

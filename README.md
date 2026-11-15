@@ -12,7 +12,7 @@ build budgeting, underwriting, or fraud features on top. Ledgerlens is a
 classic-ML pipeline (normalizer → merchant resolver → stacked category model →
 recurring detector), with an LLM planned only as a fallback for low-confidence cases.
 
-**Status:** Weeks 1–2 of 5 are done.
+**Status:** Weeks 1–3 of 5 are done (the measured LLM-fallback accuracy is pending a paid API run).
 
 | on merchants never seen in training | rules baseline | Ledgerlens |
 |---|---|---|
@@ -20,6 +20,8 @@ recurring detector), with an LLM planned only as a fallback for low-confidence c
 | category macro-F1 | 0.583 | **0.682** |
 | accuracy, leak-free slice ([why](#leakage-check)) | 42.8% | **76.0%** |
 | merchant name exactly right (known chains) | 49.2% | **94.1%** |
+| throughput (4 workers, M1 laptop) | – | **11.5K txns/s**, p95 38 ms per 100-txn batch |
+| serving cost per 1M txns (model only) | – | **≈ $0.004** vs ≈ $1,400 for an LLM-only pipeline |
 
 Synthetic data, mean of 3 seeds. Real hand-labeled numbers: [in progress](#labeling-real-data).
 
@@ -39,6 +41,15 @@ Enricher.load().enrich(df)   # df: description, amount, date[, user_id]
 # -> merchant, merchant_in_directory, category, confidence, is_recurring, processor
 ```
 
+```bash
+.venv/bin/uvicorn ledgerlens.service:app --workers 4          # API on :8000, model only
+LEDGERLENS_LLM=1 .venv/bin/uvicorn ledgerlens.service:app     # + LLM fallback (needs Anthropic credentials)
+
+curl -s localhost:8000/v1/enrich -H 'content-type: application/json' -d '{"transactions": [
+  {"description": "PURCHASE AUTHORIZED ON 03/14 SQ *BLUE BTL COF OAKLAND CA S38207461 CARD 4821",
+   "amount": -6.50, "date": "2026-03-14"}]}'
+```
+
 ## Layout
 
 | path | what |
@@ -53,7 +64,13 @@ Enricher.load().enrich(df)   # df: description, amount, date[, user_id]
 | `ledgerlens/features.py` | format / amount / user-history features |
 | `ledgerlens/model.py` | text model + out-of-fold stacking + LightGBM |
 | `ledgerlens/train.py` | multi-seed training, ablations, resolver eval |
-| `ledgerlens/pipeline.py` | `Enricher`: inference over a batch of transactions |
+| `ledgerlens/pipeline.py` | `Enricher`: inference over a batch of transactions; LLM fallback routing |
+| `ledgerlens/service.py` | FastAPI app: `POST /v1/enrich`, `GET /healthz` |
+| `ledgerlens/llm.py` | Claude fallback classifier (batched, structured outputs, refusal fallbacks) |
+| `ledgerlens/routing.py` | confidence calibration + threshold sweep |
+| `ledgerlens/llm_eval.py` | LLM-only vs model-only vs hybrid eval (dry-run unless `--yes`) |
+| `ledgerlens/cost.py` | cost per 1M transactions from measured throughput and tokens |
+| `loadtest/locustfile.py` | locust load test against the API |
 | `ledgerlens/evaluate.py` | metrics on synthetic test split and/or real labeled set |
 | `scripts/label.py` | CLI to hand-label your own bank exports |
 
@@ -137,7 +154,7 @@ merchants are also hidden from the directory, so LightGBM learns how much to tru
 
 With the full merchant directory available (production setting), the full model reaches **86.7% ± 3.0**.
 Merchant resolution goes from **45.5% → 82.8%** exact match overall (**94.1%** on known chains).
-Inference runs in about 25 ms for a small batch on a laptop (proper load test in week 3).
+Inference takes about 25 ms for a small batch on a laptop (see the Week 3 load test).
 
 ### What I learned (the parts worth talking about)
 
@@ -166,6 +183,70 @@ Remaining errors are mostly genuinely ambiguous: renters insurance billed monthl
 subscription, Dave & Buster's is food *and* entertainment, and a Tesla Supercharger
 charge has no obvious hint.
 
+## Week 3: serving, load test, LLM fallback, cost
+
+```
+POST /v1/enrich ──> Enricher (normalizer → resolver → LightGBM) ──> confidence ≥ 0.8 ──> response
+                                                                 └─> confidence < 0.8 ──> Claude (batched,
+                                                                     structured output, category enum) ──> response
+```
+
+### Load test ([locust](loadtest/locustfile.py), 4 uvicorn workers, M1 laptop, locust on the same machine)
+
+| workload | concurrency | throughput | p50 | p95 | p99 | errors |
+|---|---|---|---|---|---|---|
+| 1 txn / request | 4 users | 213 req/s | 13 ms | 17 ms | 26 ms | 0 |
+| 100 txns / request | 4 users | **11,500 txns/s** | 26 ms | 38 ms | 73 ms | 0 |
+| 1 txn / request | 32 users (saturated) | 279 req/s | 110 ms | 170 ms | 200 ms | 0 |
+| 100 txns / request | 32 users (saturated) | 9,800 txns/s | 260 ms | 740 ms | 1.3 s | 0 |
+
+Each request has about 9 ms of fixed overhead (mostly pandas). Batching amortizes it, and that's the lever for real-time
+single-transaction latency later.
+
+### When to call the LLM ([routing report](results/week3_routing.md))
+
+The production path reproduces the training numbers (cold 81.6%, warm 85.4%), so there's no train/serve skew.
+Sweeping a confidence threshold:
+
+| route to LLM below 0.8 | traffic routed | model acc on rows it keeps | hybrid ceiling (perfect LLM) |
+|---|---|---|---|
+| cold directory | 21.5% | 87.7% | 90.3% |
+| warm directory | 13.9% | 92.0% | 93.1% |
+
+**Limit of confidence routing:** the model is somewhat overconfident (ECE ≈ 0.07). The 0.9–1.0 bin holds
+most of the traffic at 89% accuracy (cold), so a *confident* mistake (renters insurance → SUBSCRIPTIONS)
+never reaches the LLM. Better calibration, or routing on "merchant not in directory", is the next lever.
+
+### LLM fallback design ([llm.py](ledgerlens/llm.py))
+
+- 25 transactions per request, with `output_config.format` constrained to a JSON schema whose category field is the
+  18-value enum, so every response parses and every category is valid.
+- The model's guess goes along as a hint ("these rows were sent to you because it was unsure").
+- `effort: "low"`: this is classification, not reasoning-heavy work.
+- Server-side refusal fallbacks (`fallbacks: "default"`) are on. If the chain still refuses, the rows keep the model's answer.
+- A merchant found in the directory is never overwritten by the LLM's name.
+- Defaults to `claude-opus-5-5`; any model in `PRICES` can be passed (`LEDGERLENS_LLM_MODEL`, `--model`).
+
+### Cost per 1M transactions ([cost report](results/week3_cost.md))
+
+| | per 1M txns |
+|---|---|
+| Ledgerlens model only (measured throughput, assumes $0.04/vCPU-hour) | **≈ $0.004** |
+| hybrid, Opus 5.5 fallback on 21.5% of traffic | ≈ $298 (est.) |
+| hybrid, Haiku 5.5 fallback | ≈ $7 (est.) |
+| LLM only, Opus 5.5 | ≈ $1,381 (est.) |
+| LLM only, Haiku 5.5 | ≈ $35 (est.) |
+
+(est.) = token counts estimated before any API call (pessimistic output). The measured version needs:
+
+```bash
+.venv/bin/python -m ledgerlens.llm_eval                    # dry run: plan + cost estimate, no API calls
+.venv/bin/python -m ledgerlens.llm_eval --yes              # ~$0.73 on Opus 5.5 for 400 txns; ~$0.02 on Haiku 5.5
+.venv/bin/python -m ledgerlens.cost                        # re-prices with measured tokens
+```
+
+That run also answers the question that matters: **does the hybrid beat both model-only and LLM-only on accuracy?**
+
 ## Labeling real data
 
 This is the number founders will ask about.
@@ -184,6 +265,7 @@ This is the number founders will ask about.
 
 - [x] **Week 1**: synthetic generator, normalizer, rules baseline, eval harness, labeling tool
 - [x] **Week 2**: merchant resolver, stacked TF-IDF + LightGBM category model, ablations, leakage audit
-- [ ] **Week 3**: FastAPI serving, locust load test, LLM fallback below a confidence threshold, cost per 1M transactions
+- [x] **Week 3**: FastAPI serving, locust load test, confidence routing, LLM fallback, cost per 1M transactions
+  - [ ] measured LLM-only / hybrid accuracy (`llm_eval --yes`, needs API credentials, ~$0.02–0.73)
 - [ ] **Week 4**: Next.js dashboard + Claude tool-calling finance agent with eval set
 - [ ] **Week 5**: deploy, writeup, demo video
