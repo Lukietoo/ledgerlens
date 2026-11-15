@@ -59,6 +59,16 @@ def test_recurring_and_forecast(small_ledger):
     assert f["expected_net_over_period"] == pytest.approx(2 * f["expected_monthly_net"])
 
 
+def test_monthly_spending_rejects_income_with_guidance(small_ledger):
+    # regression for agent eval q42: $0/month for INCOME made the agent doubt the data
+    with pytest.raises(ValueError, match="cashflow_forecast"):
+        small_ledger.monthly_spending("INCOME")
+    with pytest.raises(ValueError):
+        small_ledger.monthly_spending("transfer")
+    out, is_error = FinanceAgent(None, small_ledger)._call_tool("monthly_spending", {"category": "INCOME"})
+    assert is_error and "search_transactions" in out
+
+
 def test_search(small_ledger):
     s = small_ledger.search_transactions(query="chipotle", sort="amount", limit=2)
     assert s["matched"] == 4 and s["total_amount"] == -125.0

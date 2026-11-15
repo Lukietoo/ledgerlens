@@ -40,7 +40,8 @@ TOOLS = [
     _tool("spending_by_category", "Total spending per category between two dates (inclusive). Spending excludes "
           "transfers (card payments, P2P, brokerage, ATM).", {"start_date": _DATE, "end_date": _DATE}),
     _tool("monthly_spending", "Spending per calendar month (YYYY-MM), optionally for one category, plus the "
-          "average over full months.", {"category": _CAT}),
+          "average over full months. Spending only: for income use cashflow_forecast or search_transactions "
+          "with direction 'in'.", {"category": _CAT}),
     _tool("search_transactions",
           "Find transactions. query matches merchant name or raw description (case-insensitive). Amount filters "
           "use the absolute value. direction: 'out' (money out), 'in' (money in), or null. sort: 'date' (newest "

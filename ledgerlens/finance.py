@@ -90,6 +90,13 @@ class Ledger:
                 "by_category": {c: _money(v) for c, v in by.items()}}
 
     def monthly_spending(self, category: str | None = None) -> dict:
+        if category and category.upper() in {"INCOME", *NOT_SPENDING}:
+            # Silently returning $0 per month here misled the agent into "income is miscategorized"
+            # (agent eval q42). Fail loudly and point at the right tool instead.
+            raise ValueError(
+                f"{category.upper()} is not spending, so monthly_spending has nothing to report for it. "
+                "For income use cashflow_forecast (expected_monthly_income) or "
+                "search_transactions(direction='in', category='INCOME') for per-month amounts.")
         d = self.df[self.df["is_spend"]]
         if category:
             d = d[d["category"] == category.upper()]
