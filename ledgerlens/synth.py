@@ -361,10 +361,14 @@ def _log_uniform(rng: random.Random, lo: float, hi: float) -> float:
 
 
 def _sub_price(rng: random.Random, lo: float, hi: float) -> float:
+    """A plausible list price: mostly $x.99, but real plans also end in .49 / .00
+    (Netflix $15.49, ChatGPT $20.00). An all-.99 generator taught the model that
+    "subscription" means ".99", a synthetic artifact caught in smoke testing."""
     if hi <= lo:
         return lo
-    p = rng.uniform(lo, hi)
-    return round(max(lo, math.floor(p) + 0.99) if hi - lo > 1 else p, 2)
+    base = math.floor(rng.uniform(lo, hi))
+    cents = rng.choices([0.99, 0.49, 0.00, 0.95], weights=[55, 15, 25, 5])[0]
+    return round(min(hi, max(lo, base + cents)), 2)
 
 
 def _month_start(i: int) -> date:

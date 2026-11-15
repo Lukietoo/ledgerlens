@@ -6,3 +6,4 @@ __pycache__/
 data/synthetic/
 # real bank exports + labels stay local, never commit them
 data/real/
+models/

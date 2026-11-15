@@ -81,9 +81,13 @@ def eval_synthetic(path: Path, split: str) -> dict:
     }
 
 
-def eval_real(path: Path) -> dict:
+def load_real(path: Path) -> list[dict]:
     with path.open() as f:
-        rows = [r for r in csv.DictReader(f) if r.get("category") and r["category"] != "SKIP"]
+        return [r for r in csv.DictReader(f) if r.get("category") and r["category"] != "SKIP"]
+
+
+def eval_real(path: Path) -> dict:
+    rows = load_real(path)
     descs = [r["raw_description"] for r in rows]
     y_true = [r["category"] for r in rows]
     y_pred = [baseline.categorize(d) for d in descs]
@@ -91,6 +95,28 @@ def eval_real(path: Path) -> dict:
         "dataset": str(path),
         "category": category_metrics(y_true, y_pred),
         "merchant_exact_match": merchant_exact_match(descs, [r["merchant"] for r in rows]),
+    }
+
+
+def eval_real_model(path: Path, model_path: Path) -> dict:
+    """Trained enricher on the hand-labeled set. Rows are unique descriptions, so this is
+    the first-seen (no user history) regime."""
+    import pandas as pd
+
+    from ledgerlens.pipeline import Enricher
+
+    rows = load_real(path)
+    df = pd.DataFrame({
+        "description": [r["raw_description"] for r in rows],
+        "amount": [float(r["amount"] or 0) for r in rows],
+        "date": [r["date"] or "2026-01-01" for r in rows],
+    })
+    out = Enricher.load(model_path).enrich(df)
+    truth = [r["merchant"] for r in rows]
+    return {
+        "dataset": str(path),
+        "category": category_metrics([r["category"] for r in rows], list(out["category"])),
+        "merchant_exact_match": sum(canon(p) == canon(t) for p, t in zip(out["merchant"], truth)) / max(1, len(rows)),
     }
 
 
@@ -104,8 +130,8 @@ def to_markdown(name: str, res: dict) -> str:
         f"| transactions evaluated | {c['n']:,} |",
         f"| category accuracy | {c['accuracy']:.1%} |",
         f"| category macro-F1 | {c['macro_f1']:.3f} |",
-        f"| rule coverage (non-UNKNOWN) | {c['coverage']:.1%} |",
-        f"| merchant exact match (normalizer only) | {res['merchant_exact_match']:.1%} |",
+        f"| coverage (non-UNKNOWN) | {c['coverage']:.1%} |",
+        f"| merchant exact match | {res['merchant_exact_match']:.1%} |",
     ]
     if "recurring" in res:
         r = res["recurring"]
@@ -127,6 +153,8 @@ def main() -> None:
     ap.add_argument("--synthetic", type=Path, default=Path("data/synthetic/transactions.csv"))
     ap.add_argument("--split", default="test", choices=["train", "val", "test"])
     ap.add_argument("--real", type=Path, help="hand-labeled CSV from scripts/label.py")
+    ap.add_argument("--model", type=Path, default=Path("models/enricher.joblib"),
+                    help="trained enricher; also evaluated on --real when present")
     ap.add_argument("--out-dir", type=Path, default=Path("results"))
     args = ap.parse_args()
 
@@ -140,6 +168,10 @@ def main() -> None:
         res = eval_real(args.real)
         (args.out_dir / "baseline_real.json").write_text(json.dumps(res, indent=2))
         reports.append(to_markdown("Rules baseline: real hand-labeled", res))
+        if args.model.exists():
+            res = eval_real_model(args.real, args.model)
+            (args.out_dir / "model_real.json").write_text(json.dumps(res, indent=2))
+            reports.append(to_markdown("Trained model: real hand-labeled", res))
     if not reports:
         raise SystemExit("nothing to evaluate: run `python -m ledgerlens.synth` or pass --real")
     print("\n\n".join(reports))

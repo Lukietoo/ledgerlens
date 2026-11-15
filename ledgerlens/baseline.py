@@ -48,12 +48,49 @@ _RULES: list[tuple[str, str]] = [
 _COMPILED = [(cat, re.compile(p)) for cat, p in _RULES]
 
 
-def categorize(raw: str) -> str:
+def matched_rule(raw: str) -> tuple[str, str] | None:
+    """(category, matched text) for the first rule that fires, else None."""
     s = raw.upper()
     for cat, pat in _COMPILED:
-        if pat.search(s):
-            return cat
-    return UNKNOWN
+        m = pat.search(s)
+        if m:
+            return cat, m.group(0)
+    return None
+
+
+def categorize(raw: str) -> str:
+    hit = matched_rule(raw)
+    return hit[0] if hit else UNKNOWN
+
+
+# Words that describe a *kind* of business or payment rather than naming a brand.
+# A rule match made only of these words is fair game on unseen merchants; a match on
+# anything else (NETFLIX, AIRBNB, VENMO...) means the rules author named that merchant.
+GENERIC_WORDS = frozenset("""
+    SERVICE MAINTENANCE OVERDRAFT INSUFFICIENT FUNDS ATM TRANSACTION WIRE TRANSFER LATE FEE
+    PAYROLL DIR DEP DIRECT SALARY TAX REF INTEREST PAYMENT EARNED PAID INST XFER CASH WITHDRAW
+    E EPAYMENT CRD AUTOPAY MOBILE PMT MONEYLINK MONEYLINE SECURITIES LOAN FINANCIAL AUTO FINANCE
+    RENT MORTGAGE LEASING APARTMENTS RESIDENTIAL ENERGY ELECTRIC WATER WIRELESS WRLS INTERNET
+    SUBSCR MEMBERSHIP PARKING TOLL TRANSIT GAS STATION FUEL AIRLINE AIRWAYS AIR LINES HOTEL INN
+    A CAR COFFEE CAFE ESPRESSO ROASTER BOBA TEA GROCERY MARKET SUPERMARKET FOODS PRODUCE
+    RESTAURANT GRILL KITCHEN PIZZA TACO BURGER SUSHI THAI PHO BBQ DINER BISTRO NOODLE RAMEN TST
+    PHARMACY MEDICAL CLINIC DENTAL HEALTH DOCTOR OPTOMETR FITNESS GYM YOGA PILATES CROSSFIT
+    CLIMBING CINEMA THEATRE THEATER BOWL UNIVERSITY COLLEGE TUITION SCHOOL TEXTBOOK STORE SHOP
+    BOUTIQUE OUTLET
+""".split())
+
+
+def is_brand_match(raw: str) -> bool:
+    """True if the first firing rule matched a brand word inside the merchant-name part of
+    the descriptor (not the location: "BERKELEY" in "WINGSTOP BERKELEY CA" doesn't count)."""
+    hit = matched_rule(raw)
+    if not hit:
+        return False
+    words = set(re.findall(r"[A-Z]+", hit[1]))
+    if words <= GENERIC_WORDS:
+        return False
+    merchant_part = canon(normalize(raw).clean)
+    return canon(hit[1]) in merchant_part
 
 
 # ---------------------------------------------------------------- recurring

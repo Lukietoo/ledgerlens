@@ -1,115 +1,115 @@
 {
   "dataset": "data/synthetic/transactions.csv",
   "split": "test",
-  "n_merchants": 152,
+  "n_merchants": 153,
   "category": {
-    "n": 20874,
-    "accuracy": 0.5682667433170451,
-    "macro_f1": 0.6011447025720428,
-    "weighted_f1": 0.6511242338576692,
-    "coverage": 0.6134904666091788,
+    "n": 22906,
+    "accuracy": 0.5350563171221514,
+    "macro_f1": 0.5833758192836641,
+    "weighted_f1": 0.6253076182317152,
+    "coverage": 0.6083995459704881,
     "per_class": {
       "GROCERIES": {
         "precision": 1.0,
-        "recall": 0.6592920353982301,
-        "f1": 0.7946666666666666,
-        "support": 1130
+        "recall": 0.4701686121919585,
+        "f1": 0.6396118217909131,
+        "support": 1542
       },
       "DINING": {
-        "precision": 0.7326478149100257,
-        "recall": 0.25333333333333335,
-        "f1": 0.3764861294583884,
-        "support": 3375
+        "precision": 0.7140773158278628,
+        "recall": 0.2612059765208111,
+        "f1": 0.3824965813635476,
+        "support": 3748
       },
       "COFFEE": {
         "precision": 1.0,
-        "recall": 0.7861303744798891,
-        "f1": 0.8802609100792048,
-        "support": 3605
+        "recall": 0.7417749516173625,
+        "f1": 0.8517460317460317,
+        "support": 3617
       },
       "TRANSPORT": {
         "precision": 1.0,
         "recall": 1.0,
         "f1": 1.0,
-        "support": 2146
+        "support": 2225
       },
       "GAS": {
         "precision": 0.0,
         "recall": 0.0,
         "f1": 0.0,
-        "support": 714
+        "support": 894
       },
       "TRAVEL": {
         "precision": 1.0,
-        "recall": 0.7230769230769231,
-        "f1": 0.8392857142857143,
-        "support": 390
+        "recall": 0.7941176470588235,
+        "f1": 0.8852459016393442,
+        "support": 442
       },
       "SHOPPING": {
-        "precision": 0.15510204081632653,
-        "recall": 0.10966810966810966,
-        "f1": 0.12848689771766694,
-        "support": 693
+        "precision": 0.10845588235294118,
+        "recall": 0.15465268676277852,
+        "f1": 0.12749864937871422,
+        "support": 763
       },
       "SUBSCRIPTIONS": {
         "precision": 1.0,
-        "recall": 0.30864197530864196,
-        "f1": 0.4716981132075472,
-        "support": 1944
+        "recall": 0.35323383084577115,
+        "f1": 0.5220588235294118,
+        "support": 2412
       },
       "UTILITIES": {
         "precision": 1.0,
-        "recall": 0.6811594202898551,
-        "f1": 0.8103448275862069,
-        "support": 828
+        "recall": 0.5844155844155844,
+        "f1": 0.7377049180327869,
+        "support": 924
       },
       "ENTERTAINMENT": {
         "precision": 1.0,
-        "recall": 0.5591939546599496,
-        "f1": 0.7172859450726979,
-        "support": 1588
+        "recall": 0.58,
+        "f1": 0.7341772151898734,
+        "support": 1800
       },
       "HEALTH": {
         "precision": 1.0,
-        "recall": 0.49107142857142855,
-        "f1": 0.6586826347305389,
-        "support": 112
+        "recall": 0.4157303370786517,
+        "f1": 0.5873015873015873,
+        "support": 89
       },
       "FITNESS": {
         "precision": 1.0,
-        "recall": 0.6686868686868687,
-        "f1": 0.801452784503632,
-        "support": 495
+        "recall": 0.5405405405405406,
+        "f1": 0.7017543859649122,
+        "support": 592
       },
       "EDUCATION": {
-        "precision": 0.35311572700296734,
-        "recall": 0.33147632311977715,
-        "f1": 0.34195402298850575,
-        "support": 359
+        "precision": 0.3248407643312102,
+        "recall": 0.33774834437086093,
+        "f1": 0.33116883116883117,
+        "support": 453
       },
       "HOUSING": {
         "precision": 0.0,
         "recall": 0.0,
         "f1": 0.0,
-        "support": 1128
+        "support": 1176
       },
       "LOANS": {
         "precision": 1.0,
         "recall": 1.0,
         "f1": 1.0,
-        "support": 247
+        "support": 293
       },
       "TRANSFER": {
         "precision": 1.0,
         "recall": 1.0,
         "f1": 1.0,
-        "support": 1387
+        "support": 1369
       },
       "INCOME": {
         "precision": 1.0,
         "recall": 1.0,
         "f1": 1.0,
-        "support": 733
+        "support": 567
       },
       "FEES": {
         "precision": 0.0,
@@ -122,74 +122,74 @@
       {
         "true": "DINING",
         "pred": "UNKNOWN",
-        "count": 2025
+        "count": 2291
       },
       {
         "true": "SUBSCRIPTIONS",
         "pred": "UNKNOWN",
-        "count": 1332
+        "count": 1524
       },
       {
         "true": "HOUSING",
         "pred": "UNKNOWN",
-        "count": 1128
+        "count": 1164
       },
       {
         "true": "GAS",
         "pred": "UNKNOWN",
-        "count": 678
-      },
-      {
-        "true": "ENTERTAINMENT",
-        "pred": "UNKNOWN",
-        "count": 626
-      },
-      {
-        "true": "SHOPPING",
-        "pred": "UNKNOWN",
-        "count": 580
+        "count": 789
       },
       {
         "true": "COFFEE",
         "pred": "UNKNOWN",
-        "count": 561
+        "count": 640
+      },
+      {
+        "true": "SHOPPING",
+        "pred": "UNKNOWN",
+        "count": 617
+      },
+      {
+        "true": "ENTERTAINMENT",
+        "pred": "UNKNOWN",
+        "count": 563
       },
       {
         "true": "GROCERIES",
-        "pred": "UNKNOWN",
-        "count": 375
-      },
-      {
-        "true": "DINING",
         "pred": "SHOPPING",
-        "count": 349
+        "count": 457
       },
       {
         "true": "UTILITIES",
         "pred": "UNKNOWN",
-        "count": 264
+        "count": 384
+      },
+      {
+        "true": "DINING",
+        "pred": "SHOPPING",
+        "count": 360
       }
     ]
   },
   "category_by_merchant_kind": {
     "chain": {
-      "n": 14636,
-      "accuracy": 0.52931128723695
+      "n": 16677,
+      "accuracy": 0.504946932901601
     },
     "local": {
-      "n": 4118,
-      "accuracy": 0.48445847498785816
+      "n": 4293,
+      "accuracy": 0.44234800838574423
     },
     "template": {
-      "n": 2120,
+      "n": 1936,
       "accuracy": 1.0
     }
   },
-  "merchant_exact_match": 0.44150617993676344,
+  "merchant_exact_match": 0.4546407054920108,
   "recurring": {
-    "n": 214682,
-    "precision": 0.9734855769230769,
-    "recall": 0.890415778017194,
-    "f1": 0.9300995624763152
+    "n": 216336,
+    "precision": 0.977110018019773,
+    "recall": 0.8876059017408808,
+    "f1": 0.9302099150371496
   }
 }

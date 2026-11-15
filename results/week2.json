@@ -1,0 +1,1054 @@
+{
+  "seeds": [
+    0,
+    1,
+    2
+  ],
+  "settings": {
+    "hide_frac": 0.8,
+    "history_dropout": 0.2
+  },
+  "n": {
+    "train": 156488,
+    "val": 36942,
+    "test": 22906,
+    "test_merchants": 153,
+    "brand_named_test_merchants": [
+      "Afterpay",
+      "Airbnb",
+      "Coinbase",
+      "FasTrak",
+      "Mint Mobile",
+      "Netflix",
+      "Southern California Edison",
+      "Ticketmaster",
+      "Xbox Game Pass"
+    ],
+    "brand_clean_test_txns": 17552
+  },
+  "category": [
+    {
+      "model": "Rules baseline (week 1)",
+      "cold": {
+        "accuracy": {
+          "mean": 0.5350563171221514,
+          "std": 0.0
+        },
+        "macro_f1": {
+          "mean": 0.5833758192836641,
+          "std": 0.0
+        },
+        "acc_brand_clean": {
+          "mean": 0.4279284412032817,
+          "std": 5.551115123125783e-17
+        },
+        "macro_f1_brand_clean": {
+          "mean": 0.3874219339320024,
+          "std": 0.0
+        },
+        "acc_chain": {
+          "mean": 0.504946932901601,
+          "std": 0.0
+        },
+        "acc_local": {
+          "mean": 0.44234800838574423,
+          "std": 0.0
+        },
+        "acc_template": {
+          "mean": 1.0,
+          "std": 0.0
+        }
+      },
+      "warm": null
+    },
+    {
+      "model": "TF-IDF + logistic regression (text only)",
+      "cold": {
+        "accuracy": {
+          "mean": 0.4506242905788877,
+          "std": 5.551115123125783e-17
+        },
+        "macro_f1": {
+          "mean": 0.36243690185442046,
+          "std": 0.0
+        },
+        "acc_brand_clean": {
+          "mean": 0.5041590701914311,
+          "std": 0.0
+        },
+        "macro_f1_brand_clean": {
+          "mean": 0.3241227014645054,
+          "std": 0.0
+        },
+        "acc_chain": {
+          "mean": 0.39221682556814774,
+          "std": 0.0
+        },
+        "acc_local": {
+          "mean": 0.7130211972979269,
+          "std": 0.0
+        },
+        "acc_template": {
+          "mean": 0.37190082644628103,
+          "std": 5.551115123125783e-17
+        }
+      },
+      "warm": null
+    },
+    {
+      "model": "LightGBM: text probs + format + amount",
+      "cold": {
+        "accuracy": {
+          "mean": 0.5231962513460812,
+          "std": 0.009182882474182941
+        },
+        "macro_f1": {
+          "mean": 0.38664604252877205,
+          "std": 0.010263570378659857
+        },
+        "acc_brand_clean": {
+          "mean": 0.588081130355515,
+          "std": 0.010878221499418977
+        },
+        "macro_f1_brand_clean": {
+          "mean": 0.37934377354701804,
+          "std": 0.007821668468921022
+        },
+        "acc_chain": {
+          "mean": 0.46948891687153965,
+          "std": 0.011823713207796458
+        },
+        "acc_local": {
+          "mean": 0.8072831741594845,
+          "std": 0.010316667124902685
+        },
+        "acc_template": {
+          "mean": 0.35588842975206614,
+          "std": 0.030914159106291327
+        }
+      },
+      "warm": null
+    },
+    {
+      "model": "+ user history",
+      "cold": {
+        "accuracy": {
+          "mean": 0.6093163363310924,
+          "std": 0.012853514309365096
+        },
+        "macro_f1": {
+          "mean": 0.45560405945636834,
+          "std": 0.019302016549671862
+        },
+        "acc_brand_clean": {
+          "mean": 0.6728008204193254,
+          "std": 0.012273891877906506
+        },
+        "macro_f1_brand_clean": {
+          "mean": 0.4202197078488437,
+          "std": 0.019252088646859716
+        },
+        "acc_chain": {
+          "mean": 0.5571745517778977,
+          "std": 0.013964087164509647
+        },
+        "acc_local": {
+          "mean": 0.8790278748350028,
+          "std": 0.009426210477873577
+        },
+        "acc_template": {
+          "mean": 0.4603994490358127,
+          "std": 0.07946864620829608
+        }
+      },
+      "warm": null
+    },
+    {
+      "model": "+ rules prediction as a feature",
+      "cold": {
+        "accuracy": {
+          "mean": 0.8076340987805234,
+          "std": 8.970595772533317e-05
+        },
+        "macro_f1": {
+          "mean": 0.672762831999659,
+          "std": 0.0014514748977773931
+        },
+        "acc_brand_clean": {
+          "mean": 0.7509875417806139,
+          "std": 0.0011586181284313267
+        },
+        "macro_f1_brand_clean": {
+          "mean": 0.4899738458197475,
+          "std": 0.002113803556897439
+        },
+        "acc_chain": {
+          "mean": 0.7619675801003378,
+          "std": 0.004543038571150663
+        },
+        "acc_local": {
+          "mean": 0.8986722571628233,
+          "std": 0.017722638643425537
+        },
+        "acc_template": {
+          "mean": 0.9991391184573003,
+          "std": 0.0012174703532826386
+        }
+      },
+      "warm": null
+    },
+    {
+      "model": "+ merchant resolver (full model)",
+      "cold": {
+        "accuracy": {
+          "mean": 0.814677377106435,
+          "std": 0.0011266469833723953
+        },
+        "macro_f1": {
+          "mean": 0.6822673267400617,
+          "std": 0.001752459559426163
+        },
+        "acc_brand_clean": {
+          "mean": 0.7604641446368885,
+          "std": 0.000685789656839372
+        },
+        "macro_f1_brand_clean": {
+          "mean": 0.5016497884356853,
+          "std": 0.0022529303356919324
+        },
+        "acc_chain": {
+          "mean": 0.7724810617417202,
+          "std": 0.0007365643610037261
+        },
+        "acc_local": {
+          "mean": 0.8983616740430157,
+          "std": 0.0024749402050639156
+        },
+        "acc_template": {
+          "mean": 0.9925964187327824,
+          "std": 0.00548807763447289
+        }
+      },
+      "warm": {
+        "accuracy": {
+          "mean": 0.8674146511830961,
+          "std": 0.029668306321735644
+        },
+        "macro_f1": {
+          "mean": 0.7632402754749954,
+          "std": 0.04696629771520262
+        },
+        "acc_brand_clean": {
+          "mean": 0.8291362807657247,
+          "std": 0.038949366516792205
+        },
+        "macro_f1_brand_clean": {
+          "mean": 0.5877558732268956,
+          "std": 0.0473591325502637
+        },
+        "acc_chain": {
+          "mean": 0.8445363874397872,
+          "std": 0.039453208648042096
+        },
+        "acc_local": {
+          "mean": 0.8982840282630639,
+          "std": 0.004080653262977211
+        },
+        "acc_template": {
+          "mean": 0.9960399449035813,
+          "std": 0.004548844632790275
+        }
+      }
+    },
+    {
+      "model": "full model, first-seen txn (no user history)",
+      "cold": {
+        "accuracy": {
+          "mean": 0.7342763177042405,
+          "std": 0.006308084488672676
+        },
+        "macro_f1": {
+          "mean": 0.6371752782543735,
+          "std": 0.005093293598133451
+        },
+        "acc_brand_clean": {
+          "mean": 0.6643117593436645,
+          "std": 0.004165179306341973
+        },
+        "macro_f1_brand_clean": {
+          "mean": 0.4603478306756339,
+          "std": 0.005448288301314153
+        },
+        "acc_chain": {
+          "mean": 0.6891727129179909,
+          "std": 0.007847319071624998
+        },
+        "acc_local": {
+          "mean": 0.7914434350493051,
+          "std": 0.0029850738080194413
+        },
+        "acc_template": {
+          "mean": 0.9960399449035813,
+          "std": 0.002962233218678591
+        }
+      },
+      "warm": null
+    }
+  ],
+  "merchant": {
+    "threshold": {
+      "mean": 0.6083333333333334,
+      "std": 0.031180478223116204
+    },
+    "normalizer_only (week 1)": {
+      "overall": {
+        "mean": 0.4546407054920108,
+        "std": 0.0
+      },
+      "chain": {
+        "mean": 0.49247466570726156,
+        "std": 5.551115123125783e-17
+      },
+      "local": {
+        "mean": 0.4602841835546238,
+        "std": 0.0
+      },
+      "template": {
+        "mean": 0.11621900826446281,
+        "std": 0.0
+      }
+    },
+    "resolver_cold": {
+      "overall": {
+        "mean": 0.42947990337320646,
+        "std": 0.002066621319139285
+      },
+      "chain": {
+        "mean": 0.47124782634766443,
+        "std": 0.0005088014255704544
+      },
+      "local": {
+        "mean": 0.40849444832673343,
+        "std": 0.009131883176016233
+      },
+      "template": {
+        "mean": 0.11621900826446281,
+        "std": 0.0
+      }
+    },
+    "resolver_warm": {
+      "overall": {
+        "mean": 0.828254605780145,
+        "std": 0.01187547398657323
+      },
+      "chain": {
+        "mean": 0.9405368671423716,
+        "std": 0.01804375125683511
+      },
+      "local": {
+        "mean": 0.40849444832673343,
+        "std": 0.009131883176016233
+      },
+      "template": {
+        "mean": 0.7918388429752067,
+        "std": 1.1102230246251565e-16
+      }
+    }
+  },
+  "top_confusions_cold (seed 0)": [
+    {
+      "true": "HOUSING",
+      "pred": "SUBSCRIPTIONS",
+      "n": 1176,
+      "examples": "Lemonade Insurance"
+    },
+    {
+      "true": "ENTERTAINMENT",
+      "pred": "SHOPPING",
+      "n": 412,
+      "examples": "Fandango, Dave & Buster's, Ticketmaster"
+    },
+    {
+      "true": "EDUCATION",
+      "pred": "SUBSCRIPTIONS",
+      "n": 300,
+      "examples": "LeetCode"
+    },
+    {
+      "true": "GAS",
+      "pred": "SHOPPING",
+      "n": 287,
+      "examples": "Marathon, Tesla Supercharger"
+    },
+    {
+      "true": "ENTERTAINMENT",
+      "pred": "DINING",
+      "n": 283,
+      "examples": "Dave & Buster's, Fandango, Bowlero"
+    },
+    {
+      "true": "GAS",
+      "pred": "DINING",
+      "n": 237,
+      "examples": "Tesla Supercharger, Marathon"
+    },
+    {
+      "true": "GROCERIES",
+      "pred": "SHOPPING",
+      "n": 234,
+      "examples": "Stop & Shop, Mission Lotus, Mei's"
+    },
+    {
+      "true": "GAS",
+      "pred": "GROCERIES",
+      "n": 212,
+      "examples": "Tesla Supercharger"
+    },
+    {
+      "true": "GAS",
+      "pred": "COFFEE",
+      "n": 158,
+      "examples": "Tesla Supercharger"
+    },
+    {
+      "true": "EDUCATION",
+      "pred": "SHOPPING",
+      "n": 134,
+      "examples": "College Board"
+    }
+  ],
+  "feature_importance_gain (seed 0)": {
+    "rule_cat": 0.4085,
+    "amount": 0.0965,
+    "log_abs_amount": 0.0705,
+    "entry": 0.0666,
+    "hist_amount_cv": 0.0636,
+    "res_top1_cat": 0.0499,
+    "hist_n": 0.0399,
+    "cents": 0.03,
+    "p_FITNESS": 0.0292,
+    "p_SUBSCRIPTIONS": 0.0269,
+    "r_GROCERIES": 0.0256,
+    "p_GAS": 0.0252,
+    "p_TRAVEL": 0.0243,
+    "p_DINING": 0.0217,
+    "hist_rule_recurring": 0.0214
+  },
+  "per_seed": [
+    {
+      "seed": 0,
+      "category": [
+        {
+          "model": "Rules baseline (week 1)",
+          "cold": {
+            "accuracy": 0.5350563171221514,
+            "macro_f1": 0.5833758192836641,
+            "acc_brand_clean": 0.42792844120328166,
+            "macro_f1_brand_clean": 0.3874219339320024,
+            "acc_chain": 0.504946932901601,
+            "acc_local": 0.44234800838574423,
+            "acc_template": 1.0
+          },
+          "warm": null
+        },
+        {
+          "model": "TF-IDF + logistic regression (text only)",
+          "cold": {
+            "accuracy": 0.45062429057888764,
+            "macro_f1": 0.36243690185442046,
+            "acc_brand_clean": 0.5041590701914311,
+            "macro_f1_brand_clean": 0.3241227014645054,
+            "acc_chain": 0.39221682556814774,
+            "acc_local": 0.7130211972979269,
+            "acc_template": 0.371900826446281
+          },
+          "warm": null
+        },
+        {
+          "model": "LightGBM: text probs + format + amount",
+          "cold": {
+            "accuracy": 0.5286824412817602,
+            "macro_f1": 0.38681403707136575,
+            "acc_brand_clean": 0.5914995442114859,
+            "macro_f1_brand_clean": 0.3773069057113063,
+            "acc_chain": 0.48126161779696586,
+            "acc_local": 0.8103890053575589,
+            "acc_template": 0.3125
+          },
+          "warm": null
+        },
+        {
+          "model": "+ user history",
+          "cold": {
+            "accuracy": 0.6270409499694404,
+            "macro_f1": 0.48261139978372936,
+            "acc_brand_clean": 0.6898928896991796,
+            "macro_f1_brand_clean": 0.4448730344712908,
+            "acc_chain": 0.5724650716555736,
+            "acc_local": 0.8828325180526438,
+            "acc_template": 0.5299586776859504
+          },
+          "warm": null
+        },
+        {
+          "model": "+ rules prediction as a feature",
+          "cold": {
+            "accuracy": 0.807735964376146,
+            "macro_f1": 0.6720719545904726,
+            "acc_brand_clean": 0.7526207839562443,
+            "macro_f1_brand_clean": 0.49083431842869985,
+            "acc_chain": 0.7661449901061342,
+            "acc_local": 0.8825995807127882,
+            "acc_template": 1.0
+          },
+          "warm": null
+        },
+        {
+          "model": "+ merchant resolver (full model)",
+          "cold": {
+            "accuracy": 0.8159870776215838,
+            "macro_f1": 0.6812542719208243,
+            "acc_brand_clean": 0.7611098450319052,
+            "macro_f1_brand_clean": 0.5001167289864286,
+            "acc_chain": 0.7735204173412484,
+            "acc_local": 0.898206382483112,
+            "acc_template": 0.9994834710743802
+          },
+          "warm": {
+            "accuracy": 0.8540557059285777,
+            "macro_f1": 0.7358417697515673,
+            "acc_brand_clean": 0.8103350045578851,
+            "macro_f1_brand_clean": 0.5609055317054968,
+            "acc_chain": 0.826587515740241,
+            "acc_local": 0.894945259725134,
+            "acc_template": 1.0
+          }
+        },
+        {
+          "model": "full model, first-seen txn (no user history)",
+          "cold": {
+            "accuracy": 0.7424255653540557,
+            "macro_f1": 0.6369518003353409,
+            "acc_brand_clean": 0.6693254329990884,
+            "macro_f1_brand_clean": 0.45625984577464557,
+            "acc_chain": 0.6996462193440067,
+            "acc_local": 0.7926857675285348,
+            "acc_template": 0.9994834710743802
+          },
+          "warm": null
+        }
+      ],
+      "merchant": {
+        "threshold": 0.65,
+        "normalizer_only (week 1)": {
+          "overall": 0.4546407054920108,
+          "chain": 0.4924746657072615,
+          "local": 0.4602841835546238,
+          "template": 0.11621900826446281
+        },
+        "resolver_cold": {
+          "overall": 0.43154631974155244,
+          "chain": 0.4716076032859627,
+          "local": 0.418122525040764,
+          "template": 0.11621900826446281
+        },
+        "resolver_warm": {
+          "overall": 0.8114904391862394,
+          "chain": 0.9150326797385621,
+          "local": 0.418122525040764,
+          "template": 0.7918388429752066
+        }
+      },
+      "top_confusions_cold": [
+        {
+          "true": "HOUSING",
+          "pred": "SUBSCRIPTIONS",
+          "n": 1176,
+          "examples": "Lemonade Insurance"
+        },
+        {
+          "true": "ENTERTAINMENT",
+          "pred": "SHOPPING",
+          "n": 412,
+          "examples": "Fandango, Dave & Buster's, Ticketmaster"
+        },
+        {
+          "true": "EDUCATION",
+          "pred": "SUBSCRIPTIONS",
+          "n": 300,
+          "examples": "LeetCode"
+        },
+        {
+          "true": "GAS",
+          "pred": "SHOPPING",
+          "n": 287,
+          "examples": "Marathon, Tesla Supercharger"
+        },
+        {
+          "true": "ENTERTAINMENT",
+          "pred": "DINING",
+          "n": 283,
+          "examples": "Dave & Buster's, Fandango, Bowlero"
+        },
+        {
+          "true": "GAS",
+          "pred": "DINING",
+          "n": 237,
+          "examples": "Tesla Supercharger, Marathon"
+        },
+        {
+          "true": "GROCERIES",
+          "pred": "SHOPPING",
+          "n": 234,
+          "examples": "Stop & Shop, Mission Lotus, Mei's"
+        },
+        {
+          "true": "GAS",
+          "pred": "GROCERIES",
+          "n": 212,
+          "examples": "Tesla Supercharger"
+        },
+        {
+          "true": "GAS",
+          "pred": "COFFEE",
+          "n": 158,
+          "examples": "Tesla Supercharger"
+        },
+        {
+          "true": "EDUCATION",
+          "pred": "SHOPPING",
+          "n": 134,
+          "examples": "College Board"
+        }
+      ],
+      "feature_importance_gain": {
+        "rule_cat": 0.4085,
+        "amount": 0.0965,
+        "log_abs_amount": 0.0705,
+        "entry": 0.0666,
+        "hist_amount_cv": 0.0636,
+        "res_top1_cat": 0.0499,
+        "hist_n": 0.0399,
+        "cents": 0.03,
+        "p_FITNESS": 0.0292,
+        "p_SUBSCRIPTIONS": 0.0269,
+        "r_GROCERIES": 0.0256,
+        "p_GAS": 0.0252,
+        "p_TRAVEL": 0.0243,
+        "p_DINING": 0.0217,
+        "hist_rule_recurring": 0.0214
+      },
+      "lgbm_best_iteration": 42
+    },
+    {
+      "seed": 1,
+      "category": [
+        {
+          "model": "Rules baseline (week 1)",
+          "cold": {
+            "accuracy": 0.5350563171221514,
+            "macro_f1": 0.5833758192836641,
+            "acc_brand_clean": 0.42792844120328166,
+            "macro_f1_brand_clean": 0.3874219339320024,
+            "acc_chain": 0.504946932901601,
+            "acc_local": 0.44234800838574423,
+            "acc_template": 1.0
+          },
+          "warm": null
+        },
+        {
+          "model": "TF-IDF + logistic regression (text only)",
+          "cold": {
+            "accuracy": 0.45062429057888764,
+            "macro_f1": 0.36243690185442046,
+            "acc_brand_clean": 0.5041590701914311,
+            "macro_f1_brand_clean": 0.3241227014645054,
+            "acc_chain": 0.39221682556814774,
+            "acc_local": 0.7130211972979269,
+            "acc_template": 0.371900826446281
+          },
+          "warm": null
+        },
+        {
+          "model": "LightGBM: text probs + format + amount",
+          "cold": {
+            "accuracy": 0.5306469920544835,
+            "macro_f1": 0.3991314584797302,
+            "acc_brand_clean": 0.5993618960802187,
+            "macro_f1_brand_clean": 0.3897779455411722,
+            "acc_chain": 0.47388619056185166,
+            "acc_local": 0.818075937572793,
+            "acc_template": 0.3822314049586777
+          },
+          "warm": null
+        },
+        {
+          "model": "+ user history",
+          "cold": {
+            "accuracy": 0.603946564218982,
+            "macro_f1": 0.43866463018336654,
+            "acc_brand_clean": 0.6668755697356427,
+            "macro_f1_brand_clean": 0.39788682193690694,
+            "acc_chain": 0.5603525813995323,
+            "acc_local": 0.8881900768693222,
+            "acc_template": 0.34917355371900827
+          },
+          "warm": null
+        },
+        {
+          "model": "+ rules prediction as a feature",
+          "cold": {
+            "accuracy": 0.8075176809569545,
+            "macro_f1": 0.6747822436348648,
+            "acc_brand_clean": 0.7500569735642661,
+            "macro_f1_brand_clean": 0.4920229115103216,
+            "acc_chain": 0.7556514960724351,
+            "acc_local": 0.9233636151875145,
+            "acc_template": 0.9974173553719008
+          },
+          "warm": null
+        },
+        {
+          "model": "+ merchant resolver (full model)",
+          "cold": {
+            "accuracy": 0.8148083471579499,
+            "macro_f1": 0.6808150377440287,
+            "acc_brand_clean": 0.7607680036463081,
+            "macro_f1_brand_clean": 0.49999746736086276,
+            "acc_chain": 0.7719014211189063,
+            "acc_local": 0.9014675052410901,
+            "acc_template": 0.9922520661157025
+          },
+          "warm": {
+            "accuracy": 0.9085392473587707,
+            "macro_f1": 0.8293393479423344,
+            "acc_brand_clean": 0.8833751139471285,
+            "macro_f1_brand_clean": 0.6543188414956622,
+            "acc_chain": 0.8992624572764886,
+            "acc_local": 0.9040298159795015,
+            "acc_template": 0.9984504132231405
+          }
+        },
+        {
+          "model": "full model, first-seen txn (no user history)",
+          "cold": {
+            "accuracy": 0.7270584126429757,
+            "macro_f1": 0.631052035038297,
+            "acc_brand_clean": 0.6591271649954421,
+            "macro_f1_brand_clean": 0.4567356713682344,
+            "acc_chain": 0.6807579300833483,
+            "acc_local": 0.7873282087118565,
+            "acc_template": 0.9922520661157025
+          },
+          "warm": null
+        }
+      ],
+      "merchant": {
+        "threshold": 0.575,
+        "normalizer_only (week 1)": {
+          "overall": 0.4546407054920108,
+          "chain": 0.4924746657072615,
+          "local": 0.4602841835546238,
+          "template": 0.11621900826446281
+        },
+        "resolver_cold": {
+          "overall": 0.42665677115166334,
+          "chain": 0.47052827247106793,
+          "local": 0.39622641509433965,
+          "template": 0.11621900826446281
+        },
+        "resolver_warm": {
+          "overall": 0.8357635554003318,
+          "chain": 0.9540085147208731,
+          "local": 0.39622641509433965,
+          "template": 0.7918388429752066
+        }
+      },
+      "top_confusions_cold": [
+        {
+          "true": "HOUSING",
+          "pred": "SUBSCRIPTIONS",
+          "n": 1164,
+          "examples": "Lemonade Insurance"
+        },
+        {
+          "true": "ENTERTAINMENT",
+          "pred": "SHOPPING",
+          "n": 389,
+          "examples": "Fandango, Dave & Buster's, Maple Fox"
+        },
+        {
+          "true": "ENTERTAINMENT",
+          "pred": "DINING",
+          "n": 310,
+          "examples": "Dave & Buster's, Bowlero, Fandango"
+        },
+        {
+          "true": "EDUCATION",
+          "pred": "SUBSCRIPTIONS",
+          "n": 300,
+          "examples": "LeetCode"
+        },
+        {
+          "true": "GAS",
+          "pred": "DINING",
+          "n": 254,
+          "examples": "Tesla Supercharger, Marathon"
+        },
+        {
+          "true": "GAS",
+          "pred": "SHOPPING",
+          "n": 244,
+          "examples": "Marathon, Tesla Supercharger"
+        },
+        {
+          "true": "GAS",
+          "pred": "GROCERIES",
+          "n": 216,
+          "examples": "Tesla Supercharger, Marathon"
+        },
+        {
+          "true": "GROCERIES",
+          "pred": "SHOPPING",
+          "n": 211,
+          "examples": "Stop & Shop, Mission Lotus, Mei's"
+        },
+        {
+          "true": "GAS",
+          "pred": "COFFEE",
+          "n": 179,
+          "examples": "Tesla Supercharger"
+        },
+        {
+          "true": "DINING",
+          "pred": "SHOPPING",
+          "n": 156,
+          "examples": "Wingstop, Happy Sage, Golden Lantern Ramen"
+        }
+      ],
+      "feature_importance_gain": {
+        "rule_cat": 0.5195,
+        "amount": 0.0722,
+        "log_abs_amount": 0.0593,
+        "res_top1_cat": 0.0485,
+        "hist_amount_cv": 0.0449,
+        "hist_n": 0.0327,
+        "res_sim": 0.0319,
+        "hist_rule_recurring": 0.0285,
+        "p_FITNESS": 0.0255,
+        "r_GROCERIES": 0.0248,
+        "p_GROCERIES": 0.0239,
+        "cents": 0.0234,
+        "p_SUBSCRIPTIONS": 0.0224,
+        "r_GAS": 0.0221,
+        "r_COFFEE": 0.0204
+      },
+      "lgbm_best_iteration": 40
+    },
+    {
+      "seed": 2,
+      "category": [
+        {
+          "model": "Rules baseline (week 1)",
+          "cold": {
+            "accuracy": 0.5350563171221514,
+            "macro_f1": 0.5833758192836641,
+            "acc_brand_clean": 0.42792844120328166,
+            "macro_f1_brand_clean": 0.3874219339320024,
+            "acc_chain": 0.504946932901601,
+            "acc_local": 0.44234800838574423,
+            "acc_template": 1.0
+          },
+          "warm": null
+        },
+        {
+          "model": "TF-IDF + logistic regression (text only)",
+          "cold": {
+            "accuracy": 0.45062429057888764,
+            "macro_f1": 0.36243690185442046,
+            "acc_brand_clean": 0.5041590701914311,
+            "macro_f1_brand_clean": 0.3241227014645054,
+            "acc_chain": 0.39221682556814774,
+            "acc_local": 0.7130211972979269,
+            "acc_template": 0.371900826446281
+          },
+          "warm": null
+        },
+        {
+          "model": "LightGBM: text probs + format + amount",
+          "cold": {
+            "accuracy": 0.5102593207019995,
+            "macro_f1": 0.3739926320352201,
+            "acc_brand_clean": 0.5733819507748404,
+            "macro_f1_brand_clean": 0.37094646938857573,
+            "acc_chain": 0.4533189422558014,
+            "acc_local": 0.7933845795481016,
+            "acc_template": 0.37293388429752067
+          },
+          "warm": null
+        },
+        {
+          "model": "+ user history",
+          "cold": {
+            "accuracy": 0.5969614948048546,
+            "macro_f1": 0.4455361484020091,
+            "acc_brand_clean": 0.661634001823154,
+            "macro_f1_brand_clean": 0.4178992671383336,
+            "acc_chain": 0.5387060022785872,
+            "acc_local": 0.8660610295830422,
+            "acc_template": 0.5020661157024794
+          },
+          "warm": null
+        },
+        {
+          "model": "+ rules prediction as a feature",
+          "cold": {
+            "accuracy": 0.8076486510084694,
+            "macro_f1": 0.6714342977736396,
+            "acc_brand_clean": 0.7502848678213309,
+            "macro_f1_brand_clean": 0.487064307520221,
+            "acc_chain": 0.764106254122444,
+            "acc_local": 0.8900535755881668,
+            "acc_template": 1.0
+          },
+          "warm": null
+        },
+        {
+          "model": "+ merchant resolver (full model)",
+          "cold": {
+            "accuracy": 0.8132367065397712,
+            "macro_f1": 0.6847326705553325,
+            "acc_brand_clean": 0.7595145852324522,
+            "macro_f1_brand_clean": 0.5048351689597648,
+            "acc_chain": 0.7720213467650057,
+            "acc_local": 0.8954111344048451,
+            "acc_template": 0.9860537190082644
+          },
+          "warm": {
+            "accuracy": 0.8396490002619401,
+            "macro_f1": 0.7245397087310848,
+            "acc_brand_clean": 0.7936987237921604,
+            "macro_f1_brand_clean": 0.5480432464795277,
+            "acc_chain": 0.8077591893026324,
+            "acc_local": 0.8958770090845563,
+            "acc_template": 0.9896694214876033
+          }
+        },
+        {
+          "model": "full model, first-seen txn (no user history)",
+          "cold": {
+            "accuracy": 0.7333449751156902,
+            "macro_f1": 0.6435219993894825,
+            "acc_brand_clean": 0.664482680036463,
+            "macro_f1_brand_clean": 0.4680479748840217,
+            "acc_chain": 0.6871139893266175,
+            "acc_local": 0.7943163289075239,
+            "acc_template": 0.9963842975206612
+          },
+          "warm": null
+        }
+      ],
+      "merchant": {
+        "threshold": 0.6,
+        "normalizer_only (week 1)": {
+          "overall": 0.4546407054920108,
+          "chain": 0.4924746657072615,
+          "local": 0.4602841835546238,
+          "template": 0.11621900826446281
+        },
+        "resolver_cold": {
+          "overall": 0.43023661922640355,
+          "chain": 0.4716076032859627,
+          "local": 0.41113440484509667,
+          "template": 0.11621900826446281
+        },
+        "resolver_warm": {
+          "overall": 0.8375098227538637,
+          "chain": 0.95256940696768,
+          "local": 0.41113440484509667,
+          "template": 0.7918388429752066
+        }
+      },
+      "top_confusions_cold": [
+        {
+          "true": "HOUSING",
+          "pred": "SUBSCRIPTIONS",
+          "n": 1176,
+          "examples": "Lemonade Insurance"
+        },
+        {
+          "true": "ENTERTAINMENT",
+          "pred": "SHOPPING",
+          "n": 370,
+          "examples": "Fandango, Dave & Buster's, Maple Fox"
+        },
+        {
+          "true": "ENTERTAINMENT",
+          "pred": "DINING",
+          "n": 345,
+          "examples": "Dave & Buster's, Bowlero, Fandango"
+        },
+        {
+          "true": "GAS",
+          "pred": "DINING",
+          "n": 315,
+          "examples": "Tesla Supercharger, Marathon"
+        },
+        {
+          "true": "EDUCATION",
+          "pred": "SUBSCRIPTIONS",
+          "n": 300,
+          "examples": "LeetCode"
+        },
+        {
+          "true": "GAS",
+          "pred": "SHOPPING",
+          "n": 279,
+          "examples": "Marathon, Tesla Supercharger"
+        },
+        {
+          "true": "GAS",
+          "pred": "COFFEE",
+          "n": 184,
+          "examples": "Tesla Supercharger"
+        },
+        {
+          "true": "GROCERIES",
+          "pred": "SHOPPING",
+          "n": 163,
+          "examples": "Stop & Shop, Mission Lotus"
+        },
+        {
+          "true": "DINING",
+          "pred": "SHOPPING",
+          "n": 158,
+          "examples": "Wingstop, Happy Sage, Sunset Leaf"
+        },
+        {
+          "true": "GROCERIES",
+          "pred": "DINING",
+          "n": 129,
+          "examples": "Stop & Shop, Mission Garden Supermarket, Mei's"
+        }
+      ],
+      "feature_importance_gain": {
+        "rule_cat": 0.498,
+        "amount": 0.0923,
+        "log_abs_amount": 0.0581,
+        "hist_amount_cv": 0.0497,
+        "hist_n": 0.0357,
+        "res_top1_cat": 0.0339,
+        "entry": 0.0335,
+        "cents": 0.0286,
+        "p_FITNESS": 0.0275,
+        "hist_rule_recurring": 0.0273,
+        "r_GROCERIES": 0.0264,
+        "p_GROCERIES": 0.0232,
+        "res_sim": 0.0231,
+        "p_COFFEE": 0.0225,
+        "p_TRAVEL": 0.0201
+      },
+      "lgbm_best_iteration": 43
+    }
+  ]
+}
