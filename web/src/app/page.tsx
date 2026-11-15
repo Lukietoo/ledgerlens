@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { Chat } from "@/components/Chat";
 import { Decode } from "@/components/Decode";
 import { Recurring } from "@/components/Recurring";
+import { ReviewQueue } from "@/components/ReviewQueue";
 import { SpendingChart } from "@/components/SpendingChart";
 import { TransactionFeed } from "@/components/TransactionFeed";
 import { api, usd, type Dashboard, type DatasetInfo, type Txn } from "@/lib/api";
@@ -14,7 +15,8 @@ const SAMPLE: Txn[] = [
   { description: "CHECKCARD 0412 AMZN MKTP US*2K4AB1CD2 AMZN.COM/BILL WA 30196686274025326268433", merchant: "Amazon", category: "SHOPPING" },
   { description: "ZILLOW RENT DES:RENT ID:63YY09OPN INDN:ANDREW ANDERSON CO ID:2369560690 WEB", merchant: "Zillow Rent", category: "HOUSING" },
   { description: "TST* GOLDEN FOX TAQUERIA BERKELEY CA", merchant: "Golden Fox Taqueria", category: "DINING" },
-].map((t) => ({ ...t, date: "", amount: 0, confidence: 1, source: "model", merchant_in_directory: true, is_recurring: false }));
+].map((t) => ({ ...t, date: "", amount: 0, confidence: 1, source: "model", merchant_in_directory: true,
+  is_recurring: false, merchant_key: "" }));
 
 export default function Home() {
   const [info, setInfo] = useState<DatasetInfo | null>(null);
@@ -22,6 +24,9 @@ export default function Home() {
   const [examples, setExamples] = useState<Txn[]>(SAMPLE);
   const [loading, setLoading] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // a correction changes totals, the chart, subscriptions and the review list: refetch them all
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [notice, setNotice] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   // public demo servers can turn statement uploads off; hide the button rather than fail on click
   const [uploadsEnabled, setUploadsEnabled] = useState(true);
@@ -37,11 +42,24 @@ export default function Home() {
       const [d, feed] = await Promise.all([api.dashboard(i.dataset_id), api.transactions(i.dataset_id, { limit: 200 })]);
       setInfo(i);
       setDash(d);
+      setNotice(null);
       setExamples(pickExamples(feed.rows));
     } catch (e) {
       setError((e as Error).message);
     } finally {
       setLoading(null);
+    }
+  }
+
+  async function changed(message: string) {
+    setNotice(message);
+    setRefreshKey((k) => k + 1);
+    if (info) {
+      try {
+        setDash(await api.dashboard(info.dataset_id));
+      } catch (e) {
+        setError((e as Error).message);
+      }
     }
   }
 
@@ -85,11 +103,16 @@ export default function Home() {
         {error && <p role="alert" className="mt-4 text-sm text-red">{error}</p>}
       </section>
 
+      <p aria-live="polite" className={notice ? "sticky top-3 z-10 mx-auto mt-4 w-fit rounded-full bg-ink px-4 py-1.5 text-sm text-surface shadow" : "sr-only"}>
+        {notice}
+      </p>
+
       {info && dash && (
         <div className="mt-10 grid gap-12 lg:grid-cols-[minmax(0,1fr)_360px]">
           <div className="min-w-0 space-y-12">
             <SpendingChart data={dash} />
-            <TransactionFeed datasetId={info.dataset_id} categories={Object.keys(
+            <ReviewQueue datasetId={info.dataset_id} refreshKey={refreshKey} onChanged={changed} />
+            <TransactionFeed datasetId={info.dataset_id} refreshKey={refreshKey} onChanged={changed} categories={Object.keys(
               dash.monthly_by_category.reduce((acc, m) => ({ ...acc, ...m }), {} as Record<string, unknown>),
             ).filter((k) => k !== "month").sort()} />
           </div>

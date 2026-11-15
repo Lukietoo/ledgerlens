@@ -2,10 +2,17 @@
 
 import { useEffect, useState } from "react";
 import { api, titleCase, usd, type Txn } from "@/lib/api";
+import { FixEditor } from "./FixEditor";
 
 const PAGE = 25;
 
-export function TransactionFeed({ datasetId, categories }: { datasetId: string; categories: string[] }) {
+export function TransactionFeed({ datasetId, categories, refreshKey, onChanged }: {
+  datasetId: string;
+  categories: string[];
+  refreshKey: number;
+  onChanged: (message: string) => void;
+}) {
+  const [editing, setEditing] = useState<number | null>(null);
   const [q, setQ] = useState("");
   const [category, setCategory] = useState("");
   const [offset, setOffset] = useState(0);
@@ -21,7 +28,8 @@ export function TransactionFeed({ datasetId, categories }: { datasetId: string; 
         .catch((e) => !ctrl.signal.aborted && setError(e.message));
     }, 180);
     return () => { ctrl.abort(); clearTimeout(t); };
-  }, [datasetId, q, category, offset]);
+  }, [datasetId, q, category, offset, refreshKey]);
+  useEffect(() => setEditing(null), [datasetId, q, category, offset, refreshKey]);
 
   return (
     <section aria-labelledby="feed-title">
@@ -65,9 +73,21 @@ export function TransactionFeed({ datasetId, categories }: { datasetId: string; 
                     {r.source === "llm" && (
                       <span className="rounded bg-amber-soft px-1.5 text-[11px] text-amber" title="Named by Claude: this merchant wasn't in the directory, or the model was unsure">Claude</span>
                     )}
+                    {r.source === "user" && (
+                      <span className="rounded border border-ink/25 px-1.5 text-[11px] text-ink-soft" title="You corrected this merchant">edited</span>
+                    )}
                     {r.is_recurring && <span className="text-[11px] text-ink-faint" title="Recurring charge">recurring</span>}
+                    {editing !== i && (
+                      <button onClick={() => setEditing(i)} className="ml-auto shrink-0 text-[12px] text-ink-faint underline-offset-2 hover:text-ink hover:underline"
+                              aria-label={`Fix ${r.merchant}`}>Fix</button>
+                    )}
                   </div>
                   <div className="raw mt-0.5 truncate text-ink-faint" title={r.description}>{r.description}</div>
+                  {editing === i && (
+                    <FixEditor datasetId={datasetId} merchantKey={r.merchant_key} merchant={r.merchant} category={r.category}
+                               onCancel={() => setEditing(null)}
+                               onDone={(m) => { setEditing(null); onChanged(m); }} />
+                  )}
                 </td>
                 <td className="py-2.5 pr-3">
                   <span className="text-ink-soft">{titleCase(r.category)}</span>

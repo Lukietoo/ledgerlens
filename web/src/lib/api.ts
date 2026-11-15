@@ -56,10 +56,26 @@ export type Txn = {
   category: string;
   amount: number;
   confidence: number;
-  source: "model" | "llm";
+  source: "model" | "llm" | "user";
   merchant_in_directory: boolean;
   is_recurring: boolean;
+  merchant_key: string;
 };
+
+export type ReviewItem = {
+  merchant_key: string;
+  merchant: string;
+  category: string;
+  rows: number;
+  mean_confidence: number;
+  example: string;
+  total: number;
+};
+
+// mirrors ledgerlens/taxonomy.py
+export const CATEGORIES = ["GROCERIES", "DINING", "COFFEE", "TRANSPORT", "GAS", "TRAVEL", "SHOPPING",
+  "SUBSCRIPTIONS", "UTILITIES", "ENTERTAINMENT", "HEALTH", "FITNESS", "EDUCATION", "HOUSING", "LOANS",
+  "TRANSFER", "INCOME", "FEES"] as const;
 
 export type TraceStep = { tool: string; input: Record<string, unknown>; output_preview: string; is_error: boolean; ms: number };
 
@@ -103,6 +119,13 @@ export const api = {
     Object.entries(params).forEach(([k, v]) => v !== undefined && v !== "" && qs.set(k, String(v)));
     return call<{ total: number; rows: Txn[] }>(`/v1/datasets/${id}/transactions?${qs}`);
   },
+  review: (id: string, limit = 5) => call<{ items: ReviewItem[] }>(`/v1/datasets/${id}/review?limit=${limit}`),
+  correct: (id: string, body: { merchant_key: string; merchant?: string; category?: string }) =>
+    call<{ updated: number }>(`/v1/datasets/${id}/corrections`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(body),
+    }),
   chat: (id: string, messages: ChatMessage[]) =>
     call<ChatReply>(`/v1/datasets/${id}/chat`, {
       method: "POST",
