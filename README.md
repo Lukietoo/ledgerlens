@@ -75,7 +75,7 @@ curl -s localhost:8000/v1/enrich -H 'content-type: application/json' -d '{"trans
 | `ledgerlens/statements.py` | bank CSV parser (column aliases, split debit/credit columns) |
 | `ledgerlens/finance.py` | deterministic analytics: spending, recurring, forecast (the agent's tools) |
 | `ledgerlens/agent.py` | Claude finance agent: tool loop, trace, guardrails |
-| `ledgerlens/agent_eval.py` | 42-question agent eval with independent ground truth (dry-run unless `--yes`) |
+| `ledgerlens/agent_eval.py` | 42-question agent eval with independent ground truth (97.6% on Haiku 5.5) |
 | `web/` | Next.js dashboard: decode hero, spending chart, transaction feed, recurring, chat |
 | `ledgerlens/evaluate.py` | metrics on synthetic test split and/or real labeled set |
 | `scripts/label.py` | CLI to hand-label your own bank exports |
@@ -335,9 +335,24 @@ or month must appear in the reply.
 .venv/bin/python -m ledgerlens.agent_eval --yes --model claude-haiku-5-5  # ~$0.04; Opus 5.5 ~$1.50
 ```
 
-**Results: not run yet.** The eval needs Anthropic credentials (about $0.04 on Haiku 5.5). The question set is
-committed in [results/week4_agent_questions.json](results/week4_agent_questions.json); results will land in
-`results/week4_agent_<model>.md`.
+**Results on Claude Haiku 5.5 ([report](results/week4_agent_claude-haiku-5-5.md)): 41/42 correct (97.6%).** Avg 1.2 tool calls, 3.2 s (p95 6.3 s), **$0.0008 per question**; 0 tool errors, 0 refusals; the whole run cost $0.03.
+
+| question type | accuracy | n |
+|---|---|---|
+| dollar amounts | 96.6% | 29 |
+| counts | 100% | 5 |
+| merchant names | 100% | 5 |
+| months | 100% | 3 |
+
+**The one miss was a tool-design bug, not the model.** Asked about typical monthly income, the agent called
+`monthly_spending(category="INCOME")`. Income isn't spending, so the tool returned $0 for every month with no
+warning, and the agent concluded the income was miscategorized. The tool now rejects non-spending categories
+with an error that names the right tool (`cashflow_forecast`, or `search_transactions` with `direction='in'`),
+and a regression test covers it. The fix is unit-tested but not yet re-run against the API.
+
+The first attempt at this eval never reached the model: the API rejected the tool schemas (an optional enum
+declared as `type: ["string", "null"]`). The fake-client tests couldn't catch that, so a schema-shape test
+now does.
 
 ### Bugs this week's end-to-end check caught
 

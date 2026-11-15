@@ -1,0 +1,797 @@
+{
+  "model": "claude-haiku-5-5",
+  "n": 42,
+  "accuracy": 0.9761904761904762,
+  "by_kind": {
+    "count": {
+      "mean": 1.0,
+      "size": 5
+    },
+    "month": {
+      "mean": 1.0,
+      "size": 3
+    },
+    "name": {
+      "mean": 1.0,
+      "size": 5
+    },
+    "number": {
+      "mean": 0.966,
+      "size": 29
+    }
+  },
+  "avg_tool_calls": 1.1666666666666667,
+  "tool_errors": 0,
+  "avg_seconds": 3.234761904761905,
+  "p95_seconds": 6.25799999999999,
+  "total_cost_usd": 0.0337,
+  "cost_per_question_usd": 0.0008,
+  "stop_reasons": {
+    "end_turn": 42
+  },
+  "rows": [
+    {
+      "id": "q01",
+      "kind": "number",
+      "question": "How much did I spend on housing in December 2025?",
+      "answer": 1650.0,
+      "note": "",
+      "reply": "You spent **$1,650.00** on housing in December 2025. That was a single payment, Bilt Rent, on December 1, 2025.",
+      "correct": true,
+      "tools": [
+        "spending_by_category",
+        "search_transactions"
+      ],
+      "tool_errors": 0,
+      "stop_reason": "end_turn",
+      "seconds": 10.43,
+      "cost_usd": 0.00081,
+      "input_tokens": 5953,
+      "output_tokens": 436
+    },
+    {
+      "id": "q02",
+      "kind": "number",
+      "question": "How much did I spend on loans in March 2026?",
+      "answer": 582.06,
+      "note": "",
+      "reply": "You spent $582.06 on loans in March 2026.",
+      "correct": true,
+      "tools": [
+        "monthly_spending"
+      ],
+      "tool_errors": 0,
+      "stop_reason": "end_turn",
+      "seconds": 2.82,
+      "cost_usd": 0.00059,
+      "input_tokens": 5495,
+      "output_tokens": 72
+    },
+    {
+      "id": "q03",
+      "kind": "number",
+      "question": "How much did I spend on shopping in June 2026?",
+      "answer": 990.27,
+      "note": "",
+      "reply": "You spent $990.27 on shopping in June 2026 (June 1\u201330). That was your highest shopping month in the period shown on record, well above your average of $588.38 per full month.",
+      "correct": true,
+      "tools": [
+        "spending_by_category",
+        "monthly_spending"
+      ],
+      "tool_errors": 0,
+      "stop_reason": "end_turn",
+      "seconds": 2.32,
+      "cost_usd": 0.00068,
+      "input_tokens": 5862,
+      "output_tokens": 195
+    },
+    {
+      "id": "q04",
+      "kind": "number",
+      "question": "How much did I spend on dining in September 2026?",
+      "answer": 255.4,
+      "note": "",
+      "reply": "You spent $255.40 on dining in September 2026 (September 1\u201330).",
+      "correct": true,
+      "tools": [
+        "spending_by_category"
+      ],
+      "tool_errors": 0,
+      "stop_reason": "end_turn",
+      "seconds": 2.13,
+      "cost_usd": 0.00061,
+      "input_tokens": 5505,
+      "output_tokens": 113
+    },
+    {
+      "id": "q05",
+      "kind": "number",
+      "question": "How much did I spend on groceries in December 2025?",
+      "answer": 408.41,
+      "note": "",
+      "reply": "You spent $408.41 on groceries in December 2025 (December 1\u201331, 2025).",
+      "correct": true,
+      "tools": [
+        "spending_by_category",
+        "monthly_spending"
+      ],
+      "tool_errors": 0,
+      "stop_reason": "end_turn",
+      "seconds": 2.2,
+      "cost_usd": 0.00067,
+      "input_tokens": 5879,
+      "output_tokens": 168
+    },
+    {
+      "id": "q06",
+      "kind": "number",
+      "question": "How much did I spend on fitness in March 2026?",
+      "answer": 204.1,
+      "note": "",
+      "reply": "You spent $204.10 on fitness in March 2026 (March 1\u201331, 2026).",
+      "correct": true,
+      "tools": [
+        "spending_by_category",
+        "monthly_spending"
+      ],
+      "tool_errors": 0,
+      "stop_reason": "end_turn",
+      "seconds": 2.0,
+      "cost_usd": 0.00067,
+      "input_tokens": 5846,
+      "output_tokens": 167
+    },
+    {
+      "id": "q07",
+      "kind": "number",
+      "question": "How much did I spend on travel in June 2026?",
+      "answer": 434.44,
+      "note": "",
+      "reply": "You spent $434.44 on travel in June 2026 (June 1\u201330), according to the category totals.",
+      "correct": true,
+      "tools": [
+        "spending_by_category",
+        "monthly_spending"
+      ],
+      "tool_errors": 0,
+      "stop_reason": "end_turn",
+      "seconds": 1.75,
+      "cost_usd": 0.00067,
+      "input_tokens": 5859,
+      "output_tokens": 170
+    },
+    {
+      "id": "q08",
+      "kind": "number",
+      "question": "How much did I spend on education in September 2026?",
+      "answer": 123.48,
+      "note": "",
+      "reply": "You spent $123.48 on education in September 2026 (September 1\u201330).",
+      "correct": true,
+      "tools": [
+        "spending_by_category"
+      ],
+      "tool_errors": 0,
+      "stop_reason": "end_turn",
+      "seconds": 1.88,
+      "cost_usd": 0.00061,
+      "input_tokens": 5503,
+      "output_tokens": 110
+    },
+    {
+      "id": "q09",
+      "kind": "number",
+      "question": "What was my total spending in December 2025, not counting transfers?",
+      "answer": 5324.54,
+      "note": "",
+      "reply": "Your total spending in December 2025 was $5,324.54, excluding transfers.",
+      "correct": true,
+      "tools": [
+        "monthly_spending"
+      ],
+      "tool_errors": 0,
+      "stop_reason": "end_turn",
+      "seconds": 2.23,
+      "cost_usd": 0.00065,
+      "input_tokens": 5603,
+      "output_tokens": 172
+    },
+    {
+      "id": "q10",
+      "kind": "number",
+      "question": "What was my total spending in March 2026, not counting transfers?",
+      "answer": 4097.92,
+      "note": "",
+      "reply": "Your total spending in March 2026 was $4,097.92, excluding transfers.",
+      "correct": true,
+      "tools": [
+        "monthly_spending"
+      ],
+      "tool_errors": 0,
+      "stop_reason": "end_turn",
+      "seconds": 2.49,
+      "cost_usd": 0.00065,
+      "input_tokens": 5614,
+      "output_tokens": 183
+    },
+    {
+      "id": "q11",
+      "kind": "number",
+      "question": "What was my total spending in June 2026, not counting transfers?",
+      "answer": 5123.17,
+      "note": "",
+      "reply": "Your total spending in June 2026 was $5,123.17, excluding transfers. That covers all categories from June 1 to June 30, including housing ($1,650.00) and loans ($740.46).",
+      "correct": true,
+      "tools": [
+        "spending_by_category"
+      ],
+      "tool_errors": 0,
+      "stop_reason": "end_turn",
+      "seconds": 3.54,
+      "cost_usd": 0.00063,
+      "input_tokens": 5513,
+      "output_tokens": 149
+    },
+    {
+      "id": "q12",
+      "kind": "number",
+      "question": "What was my total spending in September 2026, not counting transfers?",
+      "answer": 4805.34,
+      "note": "",
+      "reply": "Your total spending in September 2026 was $4,805.34, excluding transfers.",
+      "correct": true,
+      "tools": [
+        "monthly_spending"
+      ],
+      "tool_errors": 0,
+      "stop_reason": "end_turn",
+      "seconds": 1.93,
+      "cost_usd": 0.00059,
+      "input_tokens": 5509,
+      "output_tokens": 78
+    },
+    {
+      "id": "q13",
+      "kind": "number",
+      "question": "How much have I spent at Apple Store in total?",
+      "answer": 2950.44,
+      "note": "",
+      "reply": "You've spent **$2,950.44** at Apple Store across 14 transactions, from 2025-12-11 to 2026-09-27. All 14 are purchases, and the tool's total covers every match.",
+      "correct": true,
+      "tools": [
+        "search_transactions"
+      ],
+      "tool_errors": 0,
+      "stop_reason": "end_turn",
+      "seconds": 2.93,
+      "cost_usd": 0.00085,
+      "input_tokens": 6383,
+      "output_tokens": 426
+    },
+    {
+      "id": "q14",
+      "kind": "number",
+      "question": "How much have I spent at Wayfair in total?",
+      "answer": 2901.7,
+      "note": "",
+      "reply": "You've spent **$2,901.70** at Wayfair across 17 purchases, from 2025-12-03 to 2026-10-22. This counts outgoing charges only.",
+      "correct": true,
+      "tools": [
+        "search_transactions"
+      ],
+      "tool_errors": 0,
+      "stop_reason": "end_turn",
+      "seconds": 6.37,
+      "cost_usd": 0.0009,
+      "input_tokens": 6564,
+      "output_tokens": 482
+    },
+    {
+      "id": "q15",
+      "kind": "number",
+      "question": "How much have I spent at Hy-Vee in total?",
+      "answer": 2187.61,
+      "note": "",
+      "reply": "You've spent **$2,187.61** at Hy-Vee across 32 transactions, all categorized as groceries, from 2025-11-02 to 2026-10-20.",
+      "correct": true,
+      "tools": [
+        "search_transactions"
+      ],
+      "tool_errors": 0,
+      "stop_reason": "end_turn",
+      "seconds": 3.1,
+      "cost_usd": 0.00104,
+      "input_tokens": 7737,
+      "output_tokens": 531
+    },
+    {
+      "id": "q16",
+      "kind": "number",
+      "question": "How much have I spent at Bay Club in total?",
+      "answer": 1913.88,
+      "note": "",
+      "reply": "You've spent **$1,913.88** at Bay Club across 12 charges, from 2025-11-22 through 2026-10-22. Each charge was $159.49, categorized as Fitness.",
+      "correct": true,
+      "tools": [
+        "search_transactions"
+      ],
+      "tool_errors": 0,
+      "stop_reason": "end_turn",
+      "seconds": 2.71,
+      "cost_usd": 0.00079,
+      "input_tokens": 6179,
+      "output_tokens": 351
+    },
+    {
+      "id": "q17",
+      "kind": "number",
+      "question": "How much have I spent at Leo's Pilates in total?",
+      "answer": 1237.65,
+      "note": "",
+      "reply": "You've spent **$1,237.65** at Leo's Pilates in total, across 28 charges from 2025-11-26 to 2026-10-30. This counts outgoing charges only.",
+      "correct": true,
+      "tools": [
+        "search_transactions"
+      ],
+      "tool_errors": 0,
+      "stop_reason": "end_turn",
+      "seconds": 3.42,
+      "cost_usd": 0.00104,
+      "input_tokens": 7316,
+      "output_tokens": 608
+    },
+    {
+      "id": "q18",
+      "kind": "number",
+      "question": "How much have I spent at Cal Central in total?",
+      "answer": 1135.96,
+      "note": "",
+      "reply": "You've spent **$1,135.96** at Cal Central across all dates in your transactions. That's two payments, both categorized as EDUCATION tuition: $1,062.99 on 2026-08-03 and $72.97 on 2026-02-25.",
+      "correct": true,
+      "tools": [
+        "search_transactions"
+      ],
+      "tool_errors": 0,
+      "stop_reason": "end_turn",
+      "seconds": 2.46,
+      "cost_usd": 0.00074,
+      "input_tokens": 5669,
+      "output_tokens": 349
+    },
+    {
+      "id": "q19",
+      "kind": "count",
+      "question": "How many transactions do I have at Taco Bell?",
+      "answer": 50.0,
+      "note": "",
+      "reply": "You have 50 transactions at Taco Bell, all categorized as Dining, from 2025-11-11 through 2026-10-16. They total $548.52 in spending.",
+      "correct": true,
+      "tools": [
+        "search_transactions"
+      ],
+      "tool_errors": 0,
+      "stop_reason": "end_turn",
+      "seconds": 3.23,
+      "cost_usd": 0.00108,
+      "input_tokens": 8761,
+      "output_tokens": 402
+    },
+    {
+      "id": "q20",
+      "kind": "count",
+      "question": "How many transactions do I have at Philz Coffee?",
+      "answer": 44.0,
+      "note": "",
+      "reply": "You have 44 transactions at Philz Coffee, totaling $370.55 in spending across all dates in your data.",
+      "correct": true,
+      "tools": [
+        "search_transactions"
+      ],
+      "tool_errors": 0,
+      "stop_reason": "end_turn",
+      "seconds": 2.13,
+      "cost_usd": 0.00069,
+      "input_tokens": 5528,
+      "output_tokens": 274
+    },
+    {
+      "id": "q21",
+      "kind": "count",
+      "question": "How many transactions do I have at Hy-Vee?",
+      "answer": 32.0,
+      "note": "",
+      "reply": "You have 32 transactions matching \"Hy-Vee\" across all dates in your data, totaling -$2,187.61.",
+      "correct": true,
+      "tools": [
+        "search_transactions"
+      ],
+      "tool_errors": 0,
+      "stop_reason": "end_turn",
+      "seconds": 2.01,
+      "cost_usd": 0.00069,
+      "input_tokens": 5536,
+      "output_tokens": 276
+    },
+    {
+      "id": "q22",
+      "kind": "count",
+      "question": "How many transactions do I have at FasTrak?",
+      "answer": 32.0,
+      "note": "",
+      "reply": "You have 32 transactions matching \"FasTrak\" across all dates and categories, totaling $768.36 out.",
+      "correct": true,
+      "tools": [
+        "search_transactions"
+      ],
+      "tool_errors": 0,
+      "stop_reason": "end_turn",
+      "seconds": 3.03,
+      "cost_usd": 0.00072,
+      "input_tokens": 5528,
+      "output_tokens": 340
+    },
+    {
+      "id": "q23",
+      "kind": "number",
+      "question": "On average, how much do I spend on housing per month?",
+      "answer": 1650.0,
+      "note": "average over full months",
+      "reply": "On average, you spend $1,650.00 per month on housing, based on full months from 2025-11 through 2026-10. Every one of those 12 months came to exactly $1,650.00.",
+      "correct": true,
+      "tools": [
+        "monthly_spending"
+      ],
+      "tool_errors": 0,
+      "stop_reason": "end_turn",
+      "seconds": 1.98,
+      "cost_usd": 0.00061,
+      "input_tokens": 5510,
+      "output_tokens": 114
+    },
+    {
+      "id": "q24",
+      "kind": "number",
+      "question": "On average, how much do I spend on loans per month?",
+      "answer": 600.05,
+      "note": "average over full months",
+      "reply": "On average you spend $600.05 per month on loans, based on the 12 full months from 2025-11 through 2026-10. Monthly amounts ranged from $528.73 to $822.74.",
+      "correct": true,
+      "tools": [
+        "monthly_spending"
+      ],
+      "tool_errors": 0,
+      "stop_reason": "end_turn",
+      "seconds": 3.86,
+      "cost_usd": 0.00061,
+      "input_tokens": 5495,
+      "output_tokens": 115
+    },
+    {
+      "id": "q25",
+      "kind": "number",
+      "question": "On average, how much do I spend on shopping per month?",
+      "answer": 588.38,
+      "note": "average over full months",
+      "reply": "On average you spend **$588.38** on shopping per month, based on the 12 full months from November 2025 through October 2026. Monthly amounts ranged from $47.58 (November 2025) to $1,235.48 (December 2025).",
+      "correct": true,
+      "tools": [
+        "monthly_spending"
+      ],
+      "tool_errors": 0,
+      "stop_reason": "end_turn",
+      "seconds": 2.39,
+      "cost_usd": 0.00066,
+      "input_tokens": 5502,
+      "output_tokens": 225
+    },
+    {
+      "id": "q26",
+      "kind": "number",
+      "question": "On average, how much do I spend on dining per month?",
+      "answer": 326.56,
+      "note": "average over full months",
+      "reply": "On average you spend **$326.56** on dining per full month, based on November 2025 through October 2026. That average covers 12 months, and monthly amounts ranged from $106.47 (July 2026) to $599.91 (June 2026).",
+      "correct": true,
+      "tools": [
+        "monthly_spending"
+      ],
+      "tool_errors": 0,
+      "stop_reason": "end_turn",
+      "seconds": 2.52,
+      "cost_usd": 0.00066,
+      "input_tokens": 5493,
+      "output_tokens": 215
+    },
+    {
+      "id": "q27",
+      "kind": "number",
+      "question": "How much income did I receive in January 2026?",
+      "answer": 11043.94,
+      "note": "",
+      "reply": "You received **$11,043.94** in income in January 2026, across four INCOME transactions: three payroll deposits from Target ($3,718.36 on Jan 1, $3,700.15 on Jan 15, and $3,625.14 on Jan 29) and $0.29 in interest on Jan 31.",
+      "correct": true,
+      "tools": [
+        "search_transactions"
+      ],
+      "tool_errors": 0,
+      "stop_reason": "end_turn",
+      "seconds": 2.99,
+      "cost_usd": 0.00078,
+      "input_tokens": 5819,
+      "output_tokens": 395
+    },
+    {
+      "id": "q28",
+      "kind": "number",
+      "question": "How much income did I receive in May 2026?",
+      "answer": 7430.64,
+      "note": "",
+      "reply": "You received **$7,430.64** in income in May 2026 (May 1\u201331). That comes from two payroll deposits from Target, $3,717.05 on May 21 and $3,713.37 on May 7, plus $0.22 in interest on May 31.",
+      "correct": true,
+      "tools": [
+        "search_transactions"
+      ],
+      "tool_errors": 0,
+      "stop_reason": "end_turn",
+      "seconds": 3.08,
+      "cost_usd": 0.00079,
+      "input_tokens": 5721,
+      "output_tokens": 430
+    },
+    {
+      "id": "q29",
+      "kind": "number",
+      "question": "How much income did I receive in September 2026?",
+      "answer": 7164.44,
+      "note": "",
+      "reply": "You received **$7,164.44** in income in September 2026 (September 1\u201330). That's two payroll deposits from Target, $3,548.75 on September 10 and $3,615.61 on September 24, plus $0.08 in interest on September 30.",
+      "correct": true,
+      "tools": [
+        "search_transactions"
+      ],
+      "tool_errors": 0,
+      "stop_reason": "end_turn",
+      "seconds": 3.19,
+      "cost_usd": 0.00082,
+      "input_tokens": 5790,
+      "output_tokens": 479
+    },
+    {
+      "id": "q30",
+      "kind": "name",
+      "question": "What was my single biggest purchase in November 2025, not counting rent, loans or utility bills? Name the merchant.",
+      "answer": "Bay Club",
+      "note": "$159.49",
+      "reply": "Your biggest November 2025 purchase, excluding rent, loans, and utilities, was **Bay Club** at **$159.49** on November 22, 2025. I left out the $173.77 Zelle payment to Maria Patel on November 16 because it's a person-to-person transfer, not a purchase.",
+      "correct": true,
+      "tools": [
+        "search_transactions"
+      ],
+      "tool_errors": 0,
+      "stop_reason": "end_turn",
+      "seconds": 4.07,
+      "cost_usd": 0.0011,
+      "input_tokens": 7749,
+      "output_tokens": 647
+    },
+    {
+      "id": "q31",
+      "kind": "name",
+      "question": "What was my single biggest purchase in February 2026, not counting rent, loans or utility bills? Name the merchant.",
+      "answer": "Wayfair",
+      "note": "$293.62",
+      "reply": "Your largest purchase in February 2026, excluding rent, loans, and utilities, was **$293.62 at Wayfair** on February 9, 2026. The next largest was another Wayfair charge of $269.60 on February 7.",
+      "correct": true,
+      "tools": [
+        "search_transactions"
+      ],
+      "tool_errors": 0,
+      "stop_reason": "end_turn",
+      "seconds": 4.13,
+      "cost_usd": 0.00117,
+      "input_tokens": 8756,
+      "output_tokens": 582
+    },
+    {
+      "id": "q32",
+      "kind": "name",
+      "question": "What was my single biggest purchase in May 2026, not counting rent, loans or utility bills? Name the merchant.",
+      "answer": "Apple Store",
+      "note": "$420.90",
+      "reply": "Your biggest purchase in May 2026, excluding rent, loans, and utilities, was **$420.90 at Apple Store** (Apple Online Store) on May 15, 2026.",
+      "correct": true,
+      "tools": [
+        "search_transactions"
+      ],
+      "tool_errors": 0,
+      "stop_reason": "end_turn",
+      "seconds": 3.36,
+      "cost_usd": 0.00105,
+      "input_tokens": 7764,
+      "output_tokens": 542
+    },
+    {
+      "id": "q33",
+      "kind": "name",
+      "question": "What was my single biggest purchase in August 2026, not counting rent, loans or utility bills? Name the merchant.",
+      "answer": "Cal Central",
+      "note": "$1062.99",
+      "reply": "Your largest August 2026 purchase, excluding rent, loans, utilities and transfers, was **Cal Central** for **$1,062.99** on 2026-08-03. That charge is tuition, categorized as education. The next largest was Bay Club at $159.49.",
+      "correct": true,
+      "tools": [
+        "search_transactions"
+      ],
+      "tool_errors": 0,
+      "stop_reason": "end_turn",
+      "seconds": 3.81,
+      "cost_usd": 0.00109,
+      "input_tokens": 7747,
+      "output_tokens": 627
+    },
+    {
+      "id": "q34",
+      "kind": "month",
+      "question": "Which month did I spend the most on dining?",
+      "answer": "June",
+      "note": "",
+      "reply": "You spent the most on dining in June 2026, with $599.91. Your next highest months were December 2025 ($544.35) and August 2026 ($511.36).",
+      "correct": true,
+      "tools": [
+        "monthly_spending"
+      ],
+      "tool_errors": 0,
+      "stop_reason": "end_turn",
+      "seconds": 2.94,
+      "cost_usd": 0.00063,
+      "input_tokens": 5489,
+      "output_tokens": 169
+    },
+    {
+      "id": "q35",
+      "kind": "month",
+      "question": "Which month did I spend the most on shopping?",
+      "answer": "December",
+      "note": "",
+      "reply": "You spent the most on shopping in December 2025, at $1,235.48. That is the highest of the twelve months shown, November 2025 through October 2026.",
+      "correct": true,
+      "tools": [
+        "monthly_spending"
+      ],
+      "tool_errors": 0,
+      "stop_reason": "end_turn",
+      "seconds": 2.46,
+      "cost_usd": 0.00063,
+      "input_tokens": 5498,
+      "output_tokens": 168
+    },
+    {
+      "id": "q36",
+      "kind": "month",
+      "question": "Which month did I spend the most on groceries?",
+      "answer": "December",
+      "note": "",
+      "reply": "You spent the most on groceries in **December 2025**, at $408.41. The next highest was October 2026 at $381.86.",
+      "correct": true,
+      "tools": [
+        "monthly_spending"
+      ],
+      "tool_errors": 0,
+      "stop_reason": "end_turn",
+      "seconds": 3.69,
+      "cost_usd": 0.00063,
+      "input_tokens": 5497,
+      "output_tokens": 157
+    },
+    {
+      "id": "q37",
+      "kind": "number",
+      "question": "How much do my subscriptions cost per month in total?",
+      "answer": 195.47,
+      "note": "",
+      "reply": "Your recurring subscriptions total **$195.47 per month**, based on the four active subscriptions in your transaction history: Bay Club ($159.49), Grammarly ($23.99), Quizlet ($7.99), and Google One ($4.00). Bay Club makes up most of that total.",
+      "correct": true,
+      "tools": [
+        "list_recurring"
+      ],
+      "tool_errors": 0,
+      "stop_reason": "end_turn",
+      "seconds": 2.65,
+      "cost_usd": 0.00075,
+      "input_tokens": 6180,
+      "output_tokens": 256
+    },
+    {
+      "id": "q38",
+      "kind": "name",
+      "question": "What's my most expensive subscription?",
+      "answer": "Bay Club",
+      "note": "",
+      "reply": "Your most expensive subscription is Bay Club at $159.49 per month (fitness), based on your recurring charges through the latest data (last charged 2026-10-22). Your next expected charge is 2026-11-21.",
+      "correct": true,
+      "tools": [
+        "list_recurring"
+      ],
+      "tool_errors": 0,
+      "stop_reason": "end_turn",
+      "seconds": 1.88,
+      "cost_usd": 0.00067,
+      "input_tokens": 6170,
+      "output_tokens": 99
+    },
+    {
+      "id": "q39",
+      "kind": "count",
+      "question": "How many subscriptions do I have?",
+      "answer": 4.0,
+      "note": "",
+      "reply": "You have **4 subscriptions**, totaling **$195.47 per month**: Bay Club ($159.49), Grammarly ($23.99), Quizlet ($7.99), and Google One ($4.00). Bay Club is the largest at about 82% of that total.",
+      "correct": true,
+      "tools": [
+        "list_recurring"
+      ],
+      "tool_errors": 0,
+      "stop_reason": "end_turn",
+      "seconds": 2.0,
+      "cost_usd": 0.00071,
+      "input_tokens": 6170,
+      "output_tokens": 189
+    },
+    {
+      "id": "q40",
+      "kind": "number",
+      "question": "How much is my rent each month?",
+      "answer": 1650.0,
+      "note": "",
+      "reply": "Your rent is $1,650.00 a month. It's paid to Bilt Rent, which has charged that amount on a 30-day cycle for the past 12 months with no price change. The last charge was on 2026-10-01, and the next one is expected around 2026-10-31.",
+      "correct": true,
+      "tools": [
+        "list_recurring"
+      ],
+      "tool_errors": 0,
+      "stop_reason": "end_turn",
+      "seconds": 2.63,
+      "cost_usd": 0.00073,
+      "input_tokens": 6200,
+      "output_tokens": 230
+    },
+    {
+      "id": "q41",
+      "kind": "number",
+      "question": "Based on my recent months, how much should I expect to have left over next month?",
+      "answer": 2618.3,
+      "note": "",
+      "reply": "Based on August through October 2026, you should expect about **$2,618.30** left over next month. That comes from expected income of $7,223.52, minus recurring bills and subscriptions of $2,461.53, minus typical other spending of $2,143.69. This is an average, so it depends on your pay staying the same and on your discretionary spending matching recent months.",
+      "correct": true,
+      "tools": [
+        "cashflow_forecast"
+      ],
+      "tool_errors": 0,
+      "stop_reason": "end_turn",
+      "seconds": 2.65,
+      "cost_usd": 0.0007,
+      "input_tokens": 5447,
+      "output_tokens": 310
+    },
+    {
+      "id": "q42",
+      "kind": "number",
+      "question": "What's my typical monthly income lately?",
+      "answer": 7223.52,
+      "note": "",
+      "reply": "Your income doesn't show up in the INCOME monthly summary, which reports $0.00 for every month from 2025-11 to 2026-10. The transaction search does show 26 payroll deposits from Target Corp, totaling $94,237.51 over that same period, or about two paychecks a month of roughly $3,500 to $3,720 each. I can't give a reliable monthly average from the tools, so the summary's $0.00 figure is probably a categorization problem rather than a true absence of income.",
+      "correct": false,
+      "tools": [
+        "monthly_spending",
+        "search_transactions",
+        "search_transactions"
+      ],
+      "tool_errors": 0,
+      "stop_reason": "end_turn",
+      "seconds": 12.47,
+      "cost_usd": 0.00257,
+      "input_tokens": 18709,
+      "output_tokens": 1399
+    }
+  ]
+}
