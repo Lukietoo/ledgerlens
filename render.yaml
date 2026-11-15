@@ -1,0 +1,46 @@
+# Render blueprint: API + dashboard from one repo. Render dashboard -> New -> Blueprint -> pick this repo.
+# Secrets are never stored here: ANTHROPIC_API_KEY and LEDGERLENS_MODEL_URL are entered in the
+# Render dashboard (sync: false makes Render prompt for them on first deploy).
+services:
+  - type: web
+    name: ledgerlens-api
+    runtime: python
+    plan: free
+    buildCommand: pip install . && python scripts/fetch_model.py
+    startCommand: uvicorn ledgerlens.service:app --host 0.0.0.0 --port $PORT --workers 1
+    healthCheckPath: /healthz
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.13.5
+      - key: ANTHROPIC_API_KEY          # enables the chat panel and the LLM fallback
+        sync: false
+      - key: LEDGERLENS_MODEL_URL       # GitHub release asset printed by scripts/release_model.sh
+        sync: false
+      - key: LEDGERLENS_LLM             # Claude fallback for unsure / unknown merchants
+        value: "1"
+      - key: LEDGERLENS_LLM_MODEL
+        value: claude-haiku-5-5
+      - key: LEDGERLENS_AGENT_MODEL
+        value: claude-haiku-5-5
+      - key: LEDGERLENS_ALLOW_UPLOADS   # public demo: demo account only, no real statements
+        value: "0"
+      - key: LEDGERLENS_DAILY_LLM_BUDGET_USD
+        value: "2.00"
+      - key: LEDGERLENS_CHAT_PER_MIN
+        value: "6"
+
+  - type: web
+    name: ledgerlens-web
+    runtime: node
+    plan: free
+    rootDir: web
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_VERSION
+        value: 20.20.0
+      - key: LEDGERLENS_API             # Next proxies /api/* here; resolved at build time
+        fromService:
+          type: web
+          name: ledgerlens-api
+          property: host
