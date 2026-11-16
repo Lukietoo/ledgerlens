@@ -53,6 +53,17 @@ jobs:
           cache-to: type=gha,mode=max,scope=web
       - run: docker image ls ledgerlens-*
 
+      - name: api image runs on its own (hardened like production)
+        run: |
+          set -euo pipefail
+          docker run -d --name api-solo --read-only --tmpfs /tmp --cap-drop ALL \
+            --security-opt no-new-privileges:true -p 127.0.0.1:8099:8000 ledgerlens-api:dev
+          for i in $(seq 1 60); do curl -fsS localhost:8099/readyz && exit 0; sleep 1; done
+          docker logs api-solo; exit 1
+      - name: api-solo logs
+        if: always()
+        run: docker logs api-solo 2>&1 | tail -80; docker rm -f api-solo || true
+
       # ---- docker compose: api (4 workers) + redis + web + prometheus + grafana
       - name: compose up
         run: docker compose up -d --wait --wait-timeout 180
@@ -75,7 +86,10 @@ jobs:
           echo "grafana dashboard provisioned"
       - name: compose logs
         if: failure()
-        run: docker compose logs --no-color | tail -300
+        run: |
+          docker compose ps -a
+          for svc in api web redis prometheus; do echo "::group::$svc"; docker compose logs --no-color "$svc" | tail -150; echo "::endgroup::"; done
+          docker compose logs --no-color grafana | grep -iE "error|fail" | tail -40 || true
       - run: docker compose down -v
 
       # ---- kubernetes: 1 control plane + 2 workers
