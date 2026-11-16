@@ -20,6 +20,7 @@ recurring detector), with an LLM planned only as a fallback for low-confidence c
 | category macro-F1 | 0.583 | **0.716** |
 | accuracy, leak-free slice ([why](#leakage-check)) | 42.8% | **83.2%** |
 | **independent benchmark**: a third party's 68K-row dataset, merchants never seen ([why](#independent-benchmark-someone-elses-data)) | 33.9% | **75.3%** (macro-F1 0.735; 39.2% before training on a second source) |
+| independent benchmark, **model + Claude Haiku 5.5 fallback** (1,988 rows, equal per category) | – | **90.3%** (macro-F1 0.910), up from 73.8% model-only; $0.027 measured |
 | merchant name exactly right (all / known chains) | 46.8% / 50.1% | **87.5% / 94.3%** |
 | throughput (4 workers, M1 laptop) | – | **11.5K txns/s**, p95 38 ms per 100-txn batch |
 | bank statement formats never seen in training¹ | – | **78.6%** category (vs 78.2% on seen formats) |
@@ -537,6 +538,20 @@ regime gained the most (73.1% → 81.5%).
 their rows a constant stand-in amount. The model learned "amount −42 means this source": accuracy
 moved 12 points when the test stand-in changed. Training rows now get random, label-independent
 amounts, and accuracy is flat across stand-ins (75.6% / 75.3% at ×0.25 / ×4).
+
+**The full system on the same withheld merchants.** With the production routing policy unchanged,
+unsure rows and merchants outside the directory go to Claude Haiku 5.5, one call per merchant key
+([external_hybrid.py](ledgerlens/external_hybrid.py)). On a sample of 1,988 held-out rows with an
+equal count per category:
+
+| | accuracy | macro-F1 |
+|---|---|---|
+| model only | 73.8% | 0.743 |
+| **model + Claude Haiku 5.5 fallback** | **90.3%** | **0.910** |
+
+77% of these rows were routed, in 35 requests, for a measured **$0.027** ($0.014 per 1K
+transactions). That routing share is far above the production mix because every merchant here is
+new, which is the case the fallback exists for. Results: [external_hybrid.md](results/external_hybrid.md).
 
 Reproduce: `python -m ledgerlens.external_eval --write-training data/synthetic/combined.csv`, then
 `python -m ledgerlens.train --data data/synthetic/combined.csv`, then

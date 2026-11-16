@@ -1,0 +1,19 @@
+{
+  "rows": 1988,
+  "routed_share": 0.7656,
+  "llm_model": "claude-haiku-5-5",
+  "enricher": "models/enricher.joblib",
+  "model_only": {
+    "rows": 1988,
+    "accuracy": 0.7379,
+    "macro_f1": 0.743
+  },
+  "hybrid": {
+    "rows": 1988,
+    "accuracy": 0.9034,
+    "macro_f1": 0.9098
+  },
+  "llm_requests": 35,
+  "cost_usd": 0.0274,
+  "cost_per_1k_txns_usd": 0.0138
+}

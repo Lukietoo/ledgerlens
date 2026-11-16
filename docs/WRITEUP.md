@@ -51,6 +51,7 @@ measure memorization.
 | macro-F1 | 0.583 | **0.716** |
 | accuracy, leak-free slice | 42.8% | **83.2%** |
 | independent benchmark (a third party's data, merchants never seen) | 33.9% | **75.3%** |
+| same benchmark, model + Claude Haiku 5.5 fallback (1,988-row sample) | – | **90.3%** (73.8% model-only on that sample) |
 | bank formats never seen in training | – | **78.6%** (vs 78.2% seen) |
 | merchant exact match (overall / known chains) | 46.8% / 50.1% | **87.5% / 94.3%** |
 
