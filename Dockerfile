@@ -30,7 +30,8 @@ RUN LEDGERLENS_MODEL_URL=${MODEL_URL} python scripts/fetch_model.py
 FROM python:${PYTHON} AS runtime
 RUN apt-get update && apt-get install -y --no-install-recommends libgomp1 \
     && rm -rf /var/lib/apt/lists/* \
-    && useradd --uid 10001 --no-create-home --shell /usr/sbin/nologin app
+    && useradd --uid 10001 --no-create-home --shell /usr/sbin/nologin app \
+    && mkdir -p /app/models   # explicit: COPY --chmod would apply 0444 to directories it creates too
 COPY --from=build /opt/venv /opt/venv
 COPY --from=build --chmod=0444 /src/models/enricher.joblib /app/models/enricher.joblib
 COPY deploy/api-entrypoint.sh /usr/local/bin/entrypoint
@@ -40,5 +41,7 @@ ENV PATH=/opt/venv/bin:$PATH \
     WEB_CONCURRENCY=1
 WORKDIR /app
 USER 10001
+# fail the build, not the first pod, if the service user can't read the model
+RUN python -c "open('/app/models/enricher.joblib','rb').read(1)"
 EXPOSE 8000
 ENTRYPOINT ["entrypoint"]
