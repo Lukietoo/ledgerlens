@@ -130,13 +130,15 @@ def enrich(req: EnrichRequest, request: Request) -> EnrichResponse:
     model_ms = (time.perf_counter() - t0) * 1000
 
     llm_ms, routed = 0.0, 0
-    if req.llm_fallback and s.llm is not None:
+    if req.llm_fallback and s.llm is not None and _within_budget(s):
         t1 = time.perf_counter()
+        before = s.llm.usage.cost_usd()
         # names-only policy won the eval (results/week3_llm_*.md): route low-confidence rows AND rows
         # whose merchant isn't in the directory; take the LLM's category only on low-confidence rows.
         out = apply_llm_fallback(pd.DataFrame(out), s.llm, RoutingPolicy(threshold=s.threshold)).to_dict("records")
         llm_ms = (time.perf_counter() - t1) * 1000
         routed = sum(r["source"] == "llm" for r in out)
+        s.budget.spend(s.llm.usage.cost_usd() - before)  # this path used to skip the daily cap
     else:
         for r in out:
             r["source"] = "model"
