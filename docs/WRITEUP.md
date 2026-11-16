@@ -133,6 +133,27 @@ rejects that call with an error that names the right tool.
   pinned in the repo before loading it.
 - **Paid evals are dry-run by default.** They print a cost estimate and need `--yes`. CI uses a
   fake LLM client: no key, no network, no cost.
+- **The API holds no state, so it scales out.** Statements, corrections, the LLM answer cache,
+  rate limits and the spend cap live in Redis, so any worker or pod can serve any request.
+  Statements are stored as JSON, not pickle, so a compromised Redis can't run code in the API.
+  Each worker keeps a decoded copy and checks a version number on every read, so a fix made on
+  one replica shows up on all of them right away.
+- **Corrections are lock-free.** The first version locked a statement, rewrote the whole JSON
+  blob and released the lock. The load test showed writers queuing past the lock timeout, and a
+  killed worker left its lock held. Now a statement is written once, and corrections are stored
+  beside it as hash fields. Corrections to different merchants commute and each field is
+  last-writer-wins, so a fix is one O(1) atomic `MULTI`, and readers rebuild only when the
+  version moves.
+- **Failure modes are chosen on purpose.** If Redis is down, rate limiting fails open (keep
+  serving) and the spend cap fails closed (never spend money it can't count). Readiness does
+  not depend on Redis: every replica shares it, so gating on it would pull them all out of the
+  load balancer at once and turn "saved statements unavailable" into a full outage.
+- **Small requests skip pandas.** A pure-Python/NumPy path gives identical outputs for up to 16
+  transactions, 7.8× faster at p50 for one transaction.
+- **It runs on Kubernetes, and CI proves it.** Every push builds the images, boots a 3-node kind
+  cluster, and kills API pods under load. The test asserts failed requests stay under 1%, the
+  Deployment heals, saved corrections survive, and Prometheus finds every replica through
+  pod discovery.
 
 ## Limits
 
@@ -146,6 +167,8 @@ rejects that call with an error that names the right tool.
 
 ## Stack
 
-Python 3.13, scikit-learn, LightGBM, pandas, FastAPI, locust, the Anthropic Python SDK
-(Claude Haiku 5.5 for the fallback and the agent), Next.js 15, Tailwind, Recharts.
-78 tests, CI on every push, deployable to Render from one blueprint file.
+Python 3.13, scikit-learn, LightGBM, pandas, FastAPI, Redis, Prometheus, Grafana, Docker,
+Kubernetes (kind in CI), locust, the Anthropic Python SDK (Claude Haiku 5.5 for the fallback and
+the agent), Next.js 15, Tailwind, Recharts.
+117 tests, CI on every push (including a Kubernetes chaos test on a kind cluster), deployable to Render
+from one blueprint file or to Kubernetes with `kubectl apply -k deploy/`.

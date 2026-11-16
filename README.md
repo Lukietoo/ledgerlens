@@ -12,7 +12,7 @@ build budgeting, underwriting, or fraud features on top. Ledgerlens is a
 classic-ML pipeline (normalizer → merchant resolver → stacked category model →
 recurring detector), with an LLM planned only as a fallback for low-confidence cases.
 
-**Status:** all 5 weeks built. The writeup is [docs/WRITEUP.md](docs/WRITEUP.md); the demo script is [docs/DEMO.md](docs/DEMO.md).
+**Status:** all 6 weeks built; week 6 made it [scale out on Kubernetes](#week-6-scale-out-redis-kubernetes-observability). The writeup is [docs/WRITEUP.md](docs/WRITEUP.md); the demo script is [docs/DEMO.md](docs/DEMO.md).
 
 | on merchants never seen in training | rules baseline | Ledgerlens |
 |---|---|---|
@@ -25,6 +25,8 @@ recurring detector), with an LLM planned only as a fallback for low-confidence c
 | user corrections (unseen merchants) | – | **each fix repairs ~6 transactions**; 3 fixes: 81% → 94% |
 | hybrid with Claude Haiku 5.5 fallback (400 unseen txns) | – | **91.2% category / 82.2% merchant**, matching Haiku-only (91.5% / 83.8%) |
 | serving cost per 1M txns | – | ≈ $0.004 model only · **≈ $0.56–1.13 hybrid** (cached) · $26 Haiku-only |
+| small-request latency (pandas-free fast path) | – | **1.3 ms p50** for one transaction (7.8× faster), identical outputs |
+| Kubernetes chaos test in CI (pod deleted + pod force-killed under load) | – | **0 failed of 13,938 requests**; HPA scaled 3 → 8 replicas |
 
 Synthetic data, mean of 3 seeds. Real hand-labeled numbers: [in progress](#labeling-real-data).
 
@@ -68,7 +70,14 @@ curl -s localhost:8000/v1/enrich -H 'content-type: application/json' -d '{"trans
 | `ledgerlens/model.py` | text model + out-of-fold stacking + LightGBM |
 | `ledgerlens/train.py` | multi-seed training, ablations, resolver eval |
 | `ledgerlens/pipeline.py` | `Enricher`: inference over a batch of transactions; LLM fallback routing |
-| `ledgerlens/service.py` | FastAPI app: `POST /v1/enrich`, `GET /healthz` |
+| `ledgerlens/service.py` | FastAPI app: `POST /v1/enrich`, datasets, agent, `/healthz`, `/readyz`, `/metrics` |
+| `ledgerlens/fastpath.py` | pandas-free inference for small requests (identical outputs, 7.8× lower p50) |
+| `ledgerlens/state.py` | shared state in Redis (statements, LLM cache, rate limits, spend cap) or in-process |
+| `ledgerlens/metrics.py` | Prometheus metrics: per-route latency and status, enrich path, LLM spend |
+| `Dockerfile`, `web/Dockerfile` | multi-stage, non-root images; the model is SHA-256-verified at build time |
+| `compose.yaml` | full stack locally: API (4 workers) + Redis + dashboard + Prometheus + Grafana |
+| `deploy/` | Kubernetes (kustomize): Deployments, probes, HPA, PDB, Prometheus pod discovery, Grafana; chaos test |
+| `loadtest/run_scaling.py` | worker-scaling + kill-a-worker load tests against real Redis |
 | `ledgerlens/llm.py` | Claude fallback classifier (batched, structured outputs, refusal fallbacks) |
 | `ledgerlens/routing.py` | confidence calibration + threshold sweep |
 | `ledgerlens/llm_eval.py` | LLM-only vs model-only vs hybrid eval (dry-run unless `--yes`) |
@@ -490,6 +499,101 @@ synthetic population (the median unseen merchant is shared by 5 of 300 users); a
 users are always right, so production community corrections would need agreement from several users, plus abuse
 protection, before applying to anyone else. Per-user corrections don't need that.
 
+## Week 6: scale-out (Redis, Kubernetes, observability)
+
+The API used to keep statements, the LLM cache, rate limits and the spend cap in process memory, so
+it could only run as one worker. Week 6 moved all of that state into Redis
+([state.py](ledgerlens/state.py)). With no state left in the API, it scales by adding processes or
+pods, and losing one costs only the requests it was serving at that moment.
+
+### Small requests skip pandas ([report](results/week6_perf.md))
+
+For requests of up to 16 transactions (the common case for a live card swipe or a page of
+history), a pure-Python/NumPy path ([fastpath.py](ledgerlens/fastpath.py)) builds the same features
+and calls the LightGBM booster directly. Tests check that its outputs are identical to the pandas
+path's.
+
+| request (in-process, one core) | pandas | fast path | speedup at p50 |
+|---|---|---|---|
+| 1 transaction | 10.42 ms p50 / 16.98 ms p99 | **1.33 ms / 5.47 ms** | **7.8×** |
+| 16 transactions, one user | 12.84 ms / 16.08 ms | **3.20 ms / 4.06 ms** | **4.0×** |
+
+### Scaling out on one machine ([report](results/week6_scaling.md), [harness](loadtest/run_scaling.py))
+
+160 simulated users on 16 shared statements browse dashboards, page through feeds, fix merchants
+and enrich single transactions, sending requests as fast as the API answers. Any worker may serve
+any user, so every request depends on shared state.
+
+| uvicorn workers (one 8-core laptop, Redis + locust on the same machine) | throughput | p50 | p99 | errors |
+|---|---|---|---|---|
+| 1 | 163 req/s | 890 ms | 1.8 s | 0 / 7,313 |
+| 2 | 244 req/s | 580 ms | 1.1 s | 0 / 11,010 |
+| 4 | **371 req/s (2.3×)** | 360 ms | 1.1 s | 0 / 16,704 |
+| 8 | 318 req/s | 260 ms | 2.7 s | 0 / 14,440 |
+
+Four workers is the most this machine can use, because the load generator and Redis share its
+cores. Beyond that, capacity means more machines, which is what the Kubernetes setup provides.
+
+**Kill a worker under load** (SIGKILL, 4 workers): **34 of 13,346 requests failed (0.25%)**, all
+in the same second: exactly the requests in flight on the dead worker. The supervisor had a
+full set of workers again in 0.4 s, and nothing anyone saved was lost.
+
+### Kubernetes, tested on every push ([workflow](.github/workflows/k8s.yml), [manifests](deploy/))
+
+CI builds both images, boots the docker compose stack and smoke-tests it, then deploys the same
+images to a 3-node [kind](https://kind.sigs.k8s.io/) cluster:
+
+- **API Deployment**: 3 replicas spread across nodes; startup, readiness and liveness probes; a
+  `preStop` drain so deletes don't drop requests; non-root, read-only filesystem, all capabilities
+  dropped (the namespace enforces the `restricted` Pod Security Standard)
+- **HPA** (3–10 replicas on CPU, via metrics-server) and a **PodDisruptionBudget** (at most one
+  replica down during drains); rolling updates never drop below full capacity
+- **Redis** for shared state; **Prometheus** finds API pods through the Kubernetes API (namespace-scoped
+  RBAC), so new replicas are scraped automatically; **Grafana** comes with its datasource and
+  dashboard already set up
+- **Chaos test** ([deploy/chaos.sh](deploy/chaos.sh)): an in-cluster load Job runs through the
+  Service while one API pod is deleted normally and another is force-killed. The test asserts
+  fewer than 1% failed requests, a healed Deployment, a correction that survived, and Prometheus
+  scraping every replica.
+
+Latest CI run ([report](results/k8s_chaos.md)):
+
+| 75 s of in-cluster load, 16 clients, a new connection per request | |
+|---|---|
+| requests through the Service | 13,938 (186 req/s), p50 56 ms / p99 403 ms |
+| failed, across a normal pod delete **and** a force-kill | **0** |
+| autoscaling | the HPA took the API from **3 to 8 replicas** under the load (CPU at 341% of request) |
+| back to full strength after the force-kill | 10 s |
+| correction saved before the chaos, still there after | yes |
+
+```bash
+docker compose up --build        # dashboard :3000, Grafana :3001, Prometheus :9090, API :8000
+kind create cluster --name ledgerlens --config deploy/kind.yaml
+kind load docker-image ledgerlens-api:dev ledgerlens-web:dev --name ledgerlens
+kubectl apply -k deploy/ && deploy/chaos.sh
+```
+
+### Bugs the load tests caught
+
+- **Corrections bottlenecked on a lock, then failed when a worker died.** Each correction first
+  locked the whole statement, decoded and re-encoded it as JSON, and wrote it back. Under load, writers
+  queued past the lock's timeout (500s, then retryable 503s on about 6% of corrections at 2 workers). A worker
+  SIGKILLed while holding the lock blocked that statement's edits until the lease expired.
+  The fix was a different data model, not a tuned timeout. The statement is now written once, and
+  corrections live beside it as hash fields. Corrections to different merchants commute, and each
+  field is last-writer-wins, so a correction is one O(1) atomic `MULTI` with no lock. Readers rebuild
+  the corrected view only when the version changes.
+- **The first chaos run killed the wrong process.** uvicorn's children include Python's
+  multiprocessing resource tracker, and the harness killed that instead of a worker. That's why
+  the run showed "0 failures, not replaced". The harness now identifies workers by command line.
+- **The container couldn't read its own model (found by CI).** `fetch_model.py` downloaded into a
+  `NamedTemporaryFile`, which is created `0600`, so the non-root API user got `EACCES`. The fix for
+  that exposed another: `COPY --chmod=0444` also made the new directory `0444`. With several
+  workers the uvicorn parent then exited 0, so Compose reported a clean exit. The image build now
+  checks that the service user can read the model.
+- **`/v1/enrich` with the LLM fallback skipped the daily spend cap.** Only the statement path
+  checked it. Both paths now go through the same budget.
+
 ## Labeling real data
 
 This is the number founders will ask about.
@@ -515,4 +619,5 @@ This is the number founders will ask about.
 - [x] Unseen-bank-format evaluation + label-free boilerplate learner ([results](results/week5_formats.md))
 - [x] Boilerplate learner on in production for merchant names (category unaffected by design; see the gate above)
 - [x] User corrections: fix once, applied to every transaction from that merchant; review list; measured lift ([results](results/week5_corrections.md))
+- [x] **Week 6**: pandas-free fast path, Redis shared state, Prometheus/Grafana, Docker, Kubernetes with a chaos test in CI
 - [ ] Hand-labeled real-data eval (`scripts/label.py`) and re-run of the LLM fallback eval on the fixed model
