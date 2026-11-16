@@ -402,7 +402,8 @@ Steps:
 
 1. Push the repo to GitHub, then publish the model and pin its checksum:
    `scripts/release_model.sh model-vN` (needs `gh auth login`; commit the updated `model.sha256`). The current release
-   is [model-v2](https://github.com/Lukietoo/ledgerlens/releases/tag/model-v2); a deploy pointing at an older
+   is [model-v3](https://github.com/Lukietoo/ledgerlens/releases/tag/model-v3) (trained on my data plus a third party's;
+   see [the independent benchmark](#independent-benchmark-someone-elses-data)); a deploy pointing at an older
    release fails its checksum check and refuses to install, by design.
 2. In Render: **New → Blueprint**, pick the repo. When prompted, paste `ANTHROPIC_API_KEY`, the
    `LEDGERLENS_MODEL_URL` that the release script printed, and `LEDGERLENS_API`: the API service's public URL,

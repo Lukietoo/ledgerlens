@@ -21,7 +21,7 @@ COPY ledgerlens ./ledgerlens
 RUN pip install --no-deps .
 # the model is a joblib pickle (loading it runs code), so fetch_model.py refuses anything whose
 # SHA-256 doesn't match model.sha256 in this commit
-ARG MODEL_URL=https://github.com/Lukietoo/ledgerlens/releases/download/model-v2/enricher.joblib
+ARG MODEL_URL=https://github.com/Lukietoo/ledgerlens/releases/download/model-v3/enricher.joblib
 COPY model.sha256 ./
 COPY scripts/fetch_model.py ./scripts/
 RUN LEDGERLENS_MODEL_URL=${MODEL_URL} python scripts/fetch_model.py
