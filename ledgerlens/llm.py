@@ -103,7 +103,7 @@ class Prediction:
 
 class LLMClassifier:
     def __init__(self, client, model: str = DEFAULT_MODEL, effort: str = "low", batch_size: int = 25,
-                 max_tokens: int = 8000, refusal_fallbacks: bool = True):
+                 max_tokens: int = 8000, refusal_fallbacks: bool = True, cache=None):
         self.client = client
         self.model = model
         self.effort = effort
@@ -113,7 +113,7 @@ class LLMClassifier:
         self.usage = Usage()
         # merchant key -> answer. Unbounded and in-process: fine for one service instance;
         # production would back this with Redis/Postgres and write confirmed names into the directory.
-        self.cache: dict[str, Prediction] = {}
+        self.cache = cache if cache is not None else {}  # dict, or state.RedisLLMCache (shared by all workers)
         self.cache_hits = 0
 
     @staticmethod

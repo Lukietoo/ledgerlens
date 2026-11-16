@@ -20,10 +20,7 @@ from __future__ import annotations
 
 import logging
 import os
-import secrets
-import threading
 import time
-from collections import OrderedDict
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Literal
@@ -35,7 +32,8 @@ from pydantic import BaseModel, Field
 
 from ledgerlens.agent import DEFAULT_AGENT_MODEL, FinanceAgent
 from ledgerlens.finance import Ledger
-from ledgerlens.guards import DailyBudget, RateLimiter, client_id
+from ledgerlens.guards import client_id
+from ledgerlens.state import MemoryDatasets, State, build_state
 from ledgerlens.llm import DEFAULT_MODEL, LLMClassifier
 from ledgerlens.normalize import canon
 from ledgerlens.pipeline import DEFAULT_LLM_THRESHOLD, Enricher, RoutingPolicy, apply_llm_fallback
@@ -77,13 +75,14 @@ class EnrichResponse(BaseModel):
     llm_routed: int = 0
 
 
-def _make_llm() -> LLMClassifier | None:
+def _make_llm(state: State) -> LLMClassifier | None:
     if os.environ.get("LEDGERLENS_LLM") != "1":
         return None
     try:
         import anthropic
 
-        return LLMClassifier(anthropic.Anthropic(), model=os.environ.get("LEDGERLENS_LLM_MODEL", DEFAULT_MODEL))
+        model = os.environ.get("LEDGERLENS_LLM_MODEL", DEFAULT_MODEL)
+        return LLMClassifier(anthropic.Anthropic(), model=model, cache=state.llm_cache(model))
     except Exception as e:  # no credentials, etc.: serve model-only rather than fail
         log.warning("LLM fallback disabled: %s", e)
         return None
@@ -92,14 +91,18 @@ def _make_llm() -> LLMClassifier | None:
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     app.state.enricher = Enricher.load(Path(os.environ.get("LEDGERLENS_MODEL", "models/enricher.joblib")))
-    app.state.llm = _make_llm()
+    # state: in-process by default (single worker); shared Redis when LEDGERLENS_REDIS_URL is set (any workers)
+    st = build_state(os.environ.get("LEDGERLENS_REDIS_URL"),
+                     float(os.environ.get("LEDGERLENS_DAILY_LLM_BUDGET_USD", "2.00")))
+    app.state.store = st
+    app.state.llm = _make_llm(st)
     app.state.threshold = float(os.environ.get("LEDGERLENS_LLM_THRESHOLD", DEFAULT_LLM_THRESHOLD))
-    app.state.datasets = DatasetStore()
+    app.state.datasets = st.datasets
     app.state.agent_client = None
     # public-deploy guards (see guards.py); generous defaults for local use
-    app.state.limits = {name: RateLimiter(int(os.environ.get(f"LEDGERLENS_{name.upper()}_PER_MIN", default)))
+    app.state.limits = {name: st.limiter(name, int(os.environ.get(f"LEDGERLENS_{name.upper()}_PER_MIN", default)))
                         for name, default in (("chat", 8), ("upload", 5), ("demo", 20), ("correct", 60))}
-    app.state.budget = DailyBudget(float(os.environ.get("LEDGERLENS_DAILY_LLM_BUDGET_USD", "2.00")))
+    app.state.budget = st.budget
     app.state.allow_uploads = os.environ.get("LEDGERLENS_ALLOW_UPLOADS", "1") != "0"
     yield
 
@@ -112,6 +115,7 @@ def healthz(request: Request) -> dict:
     s = request.app.state
     return {"ok": True, "llm_fallback_available": s.llm is not None, "llm_threshold": s.threshold,
             "directory_merchants": len(s.enricher.resolver.merchants), "uploads_enabled": s.allow_uploads,
+            "state_backend": s.store.backend, "state_ok": s.store.ping(),
             "llm_spent_today_usd": s.budget.spent_today, "llm_daily_budget_usd": s.budget.limit}
 
 
@@ -152,33 +156,12 @@ def enrich(req: EnrichRequest, request: Request) -> EnrichResponse:
 # A "dataset" is one person's statement, enriched and held IN MEMORY ONLY (never written
 # to disk or logged). The store is bounded: the oldest datasets are evicted first.
 
-MAX_DATASETS = 32
 MAX_UPLOAD_BYTES = 5 * 1024 * 1024
 MAX_UPLOAD_ROWS = 20_000
 DEMO_SEED = 2026
 
 
-class DatasetStore:
-    def __init__(self, capacity: int = MAX_DATASETS):
-        self.capacity = capacity
-        self._items: OrderedDict[str, Ledger] = OrderedDict()
-        self._lock = threading.Lock()
-
-    def put(self, ledger: Ledger, key: str | None = None) -> str:
-        key = key or secrets.token_urlsafe(12)
-        with self._lock:
-            self._items[key] = ledger
-            self._items.move_to_end(key)
-            while len(self._items) > self.capacity:
-                self._items.popitem(last=False)
-        return key
-
-    def get(self, key: str) -> Ledger:
-        with self._lock:
-            if key not in self._items:
-                raise HTTPException(404, "dataset not found (it may have expired); upload it again")
-            self._items.move_to_end(key)
-            return self._items[key]
+DatasetStore = MemoryDatasets  # moved to state.py; Redis twin: state.RedisDatasets
 
 
 def _enrich_ledger(s, raw: pd.DataFrame) -> Ledger:
@@ -267,7 +250,13 @@ def _ledger(request: Request, dataset_id: str) -> Ledger:
     s = request.app.state
     if not hasattr(s, "datasets"):
         raise HTTPException(404, "dataset not found")
-    return s.datasets.get(dataset_id)
+    try:
+        return s.datasets.get(dataset_id)
+    except HTTPException:
+        raise
+    except Exception as e:  # shared state store unreachable: say so instead of a bare 500
+        log.warning("state store error: %s", e)
+        raise HTTPException(503, "temporarily can't reach saved statements; try again shortly") from e
 
 
 @app.get("/v1/datasets/{dataset_id}/dashboard")
@@ -364,13 +353,13 @@ def review(dataset_id: str, request: Request, limit: int = Query(8, ge=1, le=50)
 
 @app.post("/v1/datasets/{dataset_id}/corrections")
 def correct(dataset_id: str, req: CorrectionRequest, request: Request) -> dict:
-    ledger = _ledger(request, dataset_id)
+    _ledger(request, dataset_id)  # 404 / 503 before the rate limit counts it
     request.app.state.limits["correct"].check(client_id(request))
     if req.merchant is None and req.category is None:
         raise HTTPException(422, "give a merchant name, a category, or both")
-    try:
-        n = ledger.apply_correction(req.merchant_key, merchant=req.merchant.strip() if req.merchant else None,
-                                    category=req.category)
+    merchant = req.merchant.strip() if req.merchant else None
+    try:  # with Redis: one atomic, lock-free write that every worker sees on its next read
+        n = request.app.state.datasets.correct(dataset_id, req.merchant_key, merchant=merchant, category=req.category)
     except KeyError as e:
         raise HTTPException(404, "no transactions with that merchant key in this dataset") from e
     return {"updated": n, "merchant_key": req.merchant_key, "merchant": req.merchant, "category": req.category}
