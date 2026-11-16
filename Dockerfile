@@ -32,7 +32,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends libgomp1 \
     && rm -rf /var/lib/apt/lists/* \
     && useradd --uid 10001 --no-create-home --shell /usr/sbin/nologin app
 COPY --from=build /opt/venv /opt/venv
-COPY --from=build /src/models/enricher.joblib /app/models/enricher.joblib
+COPY --from=build --chmod=0444 /src/models/enricher.joblib /app/models/enricher.joblib
 COPY deploy/api-entrypoint.sh /usr/local/bin/entrypoint
 ENV PATH=/opt/venv/bin:$PATH \
     PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 \

@@ -53,6 +53,7 @@ def main() -> int:
         if got != expected:
             print(f"checksum mismatch: expected {expected}, got {got}; refusing to install", file=sys.stderr)
             return 1
+        tmp_path.chmod(0o644)  # NamedTemporaryFile is 0600: unreadable to a non-root service user
         tmp_path.replace(TARGET)
         shown = TARGET.relative_to(ROOT) if TARGET.is_relative_to(ROOT) else TARGET
         print(f"installed {shown} (sha256 {got[:12]}…)")
