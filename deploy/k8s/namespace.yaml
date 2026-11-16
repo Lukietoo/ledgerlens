@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ledgerlens
+  labels:
+    # reject pods that run as root, escalate privileges, or keep extra capabilities
+    pod-security.kubernetes.io/enforce: restricted

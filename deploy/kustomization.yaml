@@ -1,0 +1,22 @@
+# kubectl apply -k deploy/
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: ledgerlens
+resources:
+  - k8s/namespace.yaml
+  - k8s/redis.yaml
+  - k8s/api.yaml
+  - k8s/web.yaml
+  - k8s/observability.yaml
+configMapGenerator:
+  # hashed names: editing a config rolls the pods that use it
+  - name: prometheus-config
+    files:
+      - prometheus.yml=observability/prometheus-k8s.yml
+      - observability/alerts.yml
+  - name: grafana-dashboards
+    files: [observability/grafana/dashboards/ledgerlens.json]
+  - name: grafana-datasources
+    files: [observability/grafana/provisioning/datasources/prometheus.yml]
+  - name: grafana-dashboard-providers
+    files: [observability/grafana/provisioning/dashboards/ledgerlens.yml]

@@ -1,0 +1,135 @@
+name: containers + kubernetes
+
+# Builds both images, boots the docker compose stack, then deploys the same images to a real
+# 3-node Kubernetes cluster (kind) and runs a chaos test under load. No secrets, no paid calls:
+# the LLM fallback and chat stay off.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: k8s-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  manifests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: render + validate against the Kubernetes 1.32 schemas
+        run: |
+          kubectl kustomize deploy/ > rendered.yaml
+          docker run --rm -v "$PWD:/w" ghcr.io/yannh/kubeconform:v0.7.0 \
+            -strict -summary -kubernetes-version 1.32.0 /w/rendered.yaml
+
+  stack:
+    needs: manifests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+
+      - name: build api image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          tags: ledgerlens-api:dev
+          load: true
+          cache-from: type=gha,scope=api
+          cache-to: type=gha,mode=max,scope=api
+      - name: build web image
+        uses: docker/build-push-action@v6
+        with:
+          context: web
+          tags: ledgerlens-web:dev
+          load: true
+          cache-from: type=gha,scope=web
+          cache-to: type=gha,mode=max,scope=web
+      - run: docker image ls ledgerlens-*
+
+      # ---- docker compose: api (4 workers) + redis + web + prometheus + grafana
+      - name: compose up
+        run: docker compose up -d --wait --wait-timeout 180
+      - name: compose smoke test
+        run: |
+          set -euo pipefail
+          curl -fsS localhost:8000/readyz
+          curl -fsS localhost:8000/healthz | python3 -c 'import json,sys; h=json.load(sys.stdin); assert h["state_backend"]=="redis" and h["state_ok"], h; print(h)'
+          curl -fsS localhost:3000/ -o /dev/null
+          curl -fsS localhost:3000/api/healthz          # dashboard -> runtime proxy -> api
+          DID=$(curl -fsS -X POST localhost:3000/api/v1/datasets/demo | python3 -c 'import json,sys; print(json.load(sys.stdin)["dataset_id"])')
+          for i in $(seq 1 40); do curl -fsS "localhost:8000/v1/datasets/$DID/dashboard" -o /dev/null; done  # any of 4 workers
+          curl -fsS localhost:8000/metrics | grep -E '^ledgerlens_http_requests_total' | head -5
+          for i in $(seq 1 30); do
+            n=$(curl -fsS 'localhost:9090/api/v1/query?query=sum(ledgerlens_http_requests_total)' | python3 -c 'import json,sys; r=json.load(sys.stdin)["data"]["result"]; print(int(float(r[0]["value"][1])) if r else 0)')
+            [ "$n" -ge 40 ] && break; sleep 2
+          done
+          echo "prometheus counted $n requests"; [ "$n" -ge 40 ]
+          curl -fsS 'localhost:3001/api/search?query=Ledgerlens' | grep -q '"uid":"ledgerlens-api"'
+          echo "grafana dashboard provisioned"
+      - name: compose logs
+        if: failure()
+        run: docker compose logs --no-color | tail -300
+      - run: docker compose down -v
+
+      # ---- kubernetes: 1 control plane + 2 workers
+      - name: create kind cluster
+        uses: helm/kind-action@v1
+        with:
+          cluster_name: ledgerlens
+          config: deploy/kind.yaml
+      - name: load images into the cluster
+        run: kind load docker-image ledgerlens-api:dev ledgerlens-web:dev --name ledgerlens
+      - name: metrics-server (for the HPA)
+        run: |
+          kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/download/v0.7.2/components.yaml
+          kubectl -n kube-system patch deploy metrics-server --type=json \
+            -p '[{"op":"add","path":"/spec/template/spec/containers/0/args/-","value":"--kubelet-insecure-tls"}]'
+      - name: deploy
+        run: |
+          kubectl apply -k deploy/
+          for d in redis api web prometheus grafana; do kubectl -n ledgerlens rollout status deploy/$d --timeout=300s; done
+          kubectl -n ledgerlens get pods -o wide
+      - name: replicas are spread across nodes
+        run: |
+          nodes=$(kubectl -n ledgerlens get pods -l app.kubernetes.io/name=api -o jsonpath='{range .items[*]}{.spec.nodeName}{"\n"}{end}' | sort -u | wc -l)
+          echo "api pods on $nodes nodes"; [ "$nodes" -ge 2 ]
+      - name: smoke test through the dashboard service
+        run: |
+          set -euo pipefail
+          kubectl -n ledgerlens port-forward svc/web 3000:3000 >/dev/null 2>&1 &
+          kubectl -n ledgerlens port-forward svc/grafana 3001:3000 >/dev/null 2>&1 &
+          sleep 3
+          curl -fsS localhost:3000/ -o /dev/null
+          curl -fsS localhost:3000/api/healthz
+          curl -fsS -X POST localhost:3000/api/v1/datasets/demo | python3 -c 'import json,sys; d=json.load(sys.stdin); assert d["transactions"] > 300, d; print(d["dataset_id"], d["transactions"])'
+          curl -fsS 'localhost:3001/api/search?query=Ledgerlens' | grep -q '"uid":"ledgerlens-api"' && echo "grafana dashboard provisioned"
+      - name: chaos test under load
+        run: deploy/chaos.sh
+      - name: autoscaler reads pod CPU
+        run: |
+          for i in $(seq 1 60); do
+            cpu=$(kubectl -n ledgerlens get hpa api -o jsonpath='{.status.currentMetrics[0].resource.current.averageUtilization}' 2>/dev/null || true)
+            [ -n "$cpu" ] && { echo "HPA sees ${cpu}% CPU"; kubectl -n ledgerlens get hpa api; exit 0; }
+            sleep 5
+          done
+          kubectl -n ledgerlens describe hpa api; exit 1
+      - name: cluster state on failure
+        if: failure()
+        run: |
+          kubectl -n ledgerlens get all,pdb,hpa -o wide || true
+          kubectl -n ledgerlens describe pods || true
+          kubectl -n ledgerlens logs -l app.kubernetes.io/name=api --tail=100 --prefix || true
+          kubectl -n ledgerlens logs job/chaos-load --tail=100 || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: k8s-chaos
+          path: results/k8s_chaos.*
+          if-no-files-found: ignore
