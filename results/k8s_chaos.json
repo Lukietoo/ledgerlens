@@ -1,0 +1,17 @@
+{
+  "ok": 13938,
+  "failed": 0,
+  "rps": 185.8,
+  "p50_ms": 56.1,
+  "p99_ms": 403.0,
+  "correction_survived": true,
+  "failures": [],
+  "failure_rate": 0.0,
+  "graceful_victim": "api-5dccc4764d-fcjxk",
+  "killed_victim": "api-5dccc4764d-fzr8d",
+  "healed_s": 10,
+  "ready_replicas": 8,
+  "replicas": 8,
+  "prometheus_targets_up": 10,
+  "prometheus_requests_counted": 11241
+}

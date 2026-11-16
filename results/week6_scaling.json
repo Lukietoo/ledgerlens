@@ -1,0 +1,230 @@
+{
+  "users": 160,
+  "seconds": 45,
+  "machine": "8-core laptop; locust (3 processes) on the same machine",
+  "scaling": {
+    "1": {
+      "requests": 7313,
+      "failures": 0,
+      "busy_503": 0,
+      "rps": 162.59118876841617,
+      "p50_ms": 890.0,
+      "p95_ms": 1300.0,
+      "p99_ms": 1800.0,
+      "routes": {
+        "GET /dashboard": {
+          "rps": 29.014289804838384,
+          "p50_ms": 960.0,
+          "p99_ms": 1800.0,
+          "failures": 0
+        },
+        "GET /review": {
+          "rps": 22.944633776699778,
+          "p50_ms": 900.0,
+          "p99_ms": 2700.0,
+          "failures": 0
+        },
+        "GET /transactions": {
+          "rps": 50.13580345587015,
+          "p50_ms": 860.0,
+          "p99_ms": 1600.0,
+          "failures": 0
+        },
+        "POST /corrections": {
+          "rps": 9.560264073624907,
+          "p50_ms": 950.0,
+          "p99_ms": 1900.0,
+          "failures": 0
+        },
+        "POST /enrich (1 txn)": {
+          "rps": 50.93619765738294,
+          "p50_ms": 870.0,
+          "p99_ms": 1700.0,
+          "failures": 0
+        }
+      }
+    },
+    "2": {
+      "requests": 11010,
+      "failures": 0,
+      "busy_503": 0,
+      "rps": 244.40258778810016,
+      "p50_ms": 580.0,
+      "p95_ms": 950.0,
+      "p99_ms": 1100.0,
+      "routes": {
+        "GET /dashboard": {
+          "rps": 45.5507820291718,
+          "p50_ms": 680.0,
+          "p99_ms": 1300.0,
+          "failures": 0
+        },
+        "GET /review": {
+          "rps": 33.830112969034026,
+          "p50_ms": 590.0,
+          "p99_ms": 1200.0,
+          "failures": 0
+        },
+        "GET /transactions": {
+          "rps": 77.18326954943,
+          "p50_ms": 550.0,
+          "p99_ms": 1100.0,
+          "failures": 0
+        },
+        "POST /corrections": {
+          "rps": 15.472171088856113,
+          "p50_ms": 680.0,
+          "p99_ms": 1300.0,
+          "failures": 0
+        },
+        "POST /enrich (1 txn)": {
+          "rps": 72.36625215160822,
+          "p50_ms": 540.0,
+          "p99_ms": 890.0,
+          "failures": 0
+        }
+      }
+    },
+    "4": {
+      "requests": 16704,
+      "failures": 0,
+      "busy_503": 0,
+      "rps": 370.9048893459498,
+      "p50_ms": 360.0,
+      "p95_ms": 750.0,
+      "p99_ms": 1100.0,
+      "routes": {
+        "GET /dashboard": {
+          "rps": 68.56766632544857,
+          "p50_ms": 470.0,
+          "p99_ms": 1100.0,
+          "failures": 0
+        },
+        "GET /review": {
+          "rps": 49.271907893837565,
+          "p50_ms": 410.0,
+          "p99_ms": 910.0,
+          "failures": 0
+        },
+        "GET /transactions": {
+          "rps": 116.81816468205471,
+          "p50_ms": 380.0,
+          "p99_ms": 860.0,
+          "failures": 0
+        },
+        "POST /corrections": {
+          "rps": 21.47180483701709,
+          "p50_ms": 500.0,
+          "p99_ms": 1500.0,
+          "failures": 0
+        },
+        "POST /enrich (1 txn)": {
+          "rps": 114.77534560759187,
+          "p50_ms": 240.0,
+          "p99_ms": 570.0,
+          "failures": 0
+        }
+      }
+    },
+    "8": {
+      "requests": 14440,
+      "failures": 0,
+      "busy_503": 0,
+      "rps": 317.56087242531464,
+      "p50_ms": 260.0,
+      "p95_ms": 1600.0,
+      "p99_ms": 2700.0,
+      "routes": {
+        "GET /dashboard": {
+          "rps": 58.717972948448065,
+          "p50_ms": 320.0,
+          "p99_ms": 3200.0,
+          "failures": 0
+        },
+        "GET /review": {
+          "rps": 44.15943433725982,
+          "p50_ms": 300.0,
+          "p99_ms": 3000.0,
+          "failures": 0
+        },
+        "GET /transactions": {
+          "rps": 97.75332949657366,
+          "p50_ms": 240.0,
+          "p99_ms": 2500.0,
+          "failures": 0
+        },
+        "POST /corrections": {
+          "rps": 18.97888039494782,
+          "p50_ms": 300.0,
+          "p99_ms": 2900.0,
+          "failures": 0
+        },
+        "POST /enrich (1 txn)": {
+          "rps": 97.95125524808527,
+          "p50_ms": 230.0,
+          "p99_ms": 2100.0,
+          "failures": 0
+        }
+      }
+    }
+  },
+  "chaos": {
+    "requests": 13346,
+    "failures": 34,
+    "busy_503": 0,
+    "rps": 296.13826093418095,
+    "p50_ms": 450.0,
+    "p95_ms": 1100.0,
+    "p99_ms": 1600.0,
+    "routes": {
+      "GET /dashboard": {
+        "rps": 53.27648467727922,
+        "p50_ms": 600.0,
+        "p99_ms": 1600.0,
+        "failures": 7
+      },
+      "GET /review": {
+        "rps": 38.09901049183191,
+        "p50_ms": 520.0,
+        "p99_ms": 1500.0,
+        "failures": 7
+      },
+      "GET /transactions": {
+        "rps": 91.48644161783517,
+        "p50_ms": 500.0,
+        "p99_ms": 1500.0,
+        "failures": 9
+      },
+      "POST /corrections": {
+        "rps": 19.304682077981226,
+        "p50_ms": 1000.0,
+        "p99_ms": 2200.0,
+        "failures": 5
+      },
+      "POST /enrich (1 txn)": {
+        "rps": 93.97164206925343,
+        "p50_ms": 240.0,
+        "p99_ms": 860.0,
+        "failures": 6
+      }
+    },
+    "killed": {
+      "pid": 23183,
+      "at_s": 15.0,
+      "before": [
+        23183,
+        23184,
+        23185,
+        23186
+      ],
+      "recovered_s": 0.4,
+      "after": [
+        23184,
+        23185,
+        23186,
+        23602
+      ]
+    },
+    "replaced": true
+  }
+}
