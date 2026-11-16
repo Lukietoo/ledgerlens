@@ -28,8 +28,8 @@ def sample(n: int, seed: int = 0) -> pd.DataFrame:
     g = merchant_groups(df)
     held = g[assign_splits(g) == "test"]
     per = max(1, n // held["truth"].nunique())  # same count per bucket, so no class dominates
-    return (held.groupby("truth", group_keys=False).apply(lambda x: x.sample(min(len(x), per), random_state=seed))
-            .reset_index(drop=True))
+    # shuffle-then-head rather than groupby.apply, which drops the grouping column in newer pandas
+    return held.sample(frac=1, random_state=seed).groupby("truth").head(per).reset_index(drop=True)
 
 
 def main() -> None:
@@ -47,6 +47,9 @@ def main() -> None:
     x = pd.DataFrame({"description": df["raw"], "amount": df["direction"].map({"debit": -42.0, "credit": 1200.0}),
                       "date": "2026-03-15", "user_id": [f"u{i}" for i in range(len(df))]})
     enriched = enricher.enrich(x)
+    model_only = score(df, enricher)
+    baseline = metrics(model_only)  # scored before any paid call, so a bug here costs nothing
+    print(f"model only: accuracy {baseline['accuracy']:.1%}, macro-F1 {baseline['macro_f1']:.3f}")
     policy = RoutingPolicy()
     routed, _ = routed_mask(enriched, policy)
     keys = enriched.loc[routed, "merchant_key"].nunique()
@@ -61,11 +64,10 @@ def main() -> None:
 
     clf = LLMClassifier(anthropic.Anthropic(), model=args.model, batch_size=args.batch_size)
     hybrid = apply_llm_fallback(enriched, clf, policy)
-    model_only = score(df, enricher)
     both = model_only.assign(hybrid=hybrid["category"].map(OURS).fillna("(other)").values)
     r = {
         "rows": len(df), "routed_share": round(float(routed.mean()), 4), "llm_model": args.model,
-        "enricher": str(args.enricher), "model_only": metrics(both), "hybrid": metrics(both, "hybrid"),
+        "enricher": str(args.enricher), "model_only": baseline, "hybrid": metrics(both, "hybrid"),
         "llm_requests": clf.usage.requests, "cost_usd": round(clf.usage.cost_usd(), 4),
         "cost_per_1k_txns_usd": round(clf.usage.cost_usd() / len(df) * 1000, 4),
     }
