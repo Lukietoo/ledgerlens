@@ -47,9 +47,10 @@ measure memorization.
 
 | | rules baseline | Ledgerlens |
 |---|---|---|
-| category accuracy | 53.5% | **81.2%** |
-| macro-F1 | 0.583 | **0.672** |
-| accuracy, leak-free slice | 42.8% | **75.8%** |
+| category accuracy | 53.5% | **85.8%** |
+| macro-F1 | 0.583 | **0.716** |
+| accuracy, leak-free slice | 42.8% | **83.2%** |
+| independent benchmark (a third party's data, merchants never seen) | 33.9% | **75.3%** |
 | bank formats never seen in training | – | **78.6%** (vs 78.2% seen) |
 | merchant exact match (overall / known chains) | 46.8% / 50.1% | **87.5% / 94.3%** |
 
@@ -70,6 +71,13 @@ The finance agent (Claude with six deterministic analytics tools) scored **41/42
 auto-graded eval at **$0.0008 per question**.
 
 ## What the measurements caught
+
+- **My own data was flattering me.** On a third party's dataset (68K rows, someone else's generator),
+  the model trained only on my data scored 40%, no better than hand-written rules. It had learned
+  my generator's vocabulary, not banking's. Training on both sources, with whole merchants held out,
+  took it to 75% on merchants neither source had shown it, and to 86% on my own test set (from 81%).
+  The retrain also found a shortcut: a constant stand-in amount let the model tell the two sources
+  apart, until the training amounts were randomized.
 
 **My own rules leaked into the test set.** Feeding the rules baseline's guess to LightGBM was the
 biggest single jump (+20 points). But I wrote those rules while looking at the merchant list,
@@ -157,9 +165,10 @@ rejects that call with an error that names the right tool.
 
 ## Limits
 
-- **Every accuracy number is on synthetic data.** The generator is careful, but it's mine, and
-  the eval that matters is a hand-labeled set of real transactions. The tooling for it
-  (`scripts/label.py`) is built; the labels aren't done yet.
+- **Every accuracy number is on synthetic data.** The independent benchmark is someone else's
+  synthetic data, which rules out "it learned my generator", but not "real statements are messier
+  than both generators". Public real descriptor data doesn't exist; `scripts/label.py` is built for
+  hand-labeling real exports.
 - The LLM-fallback numbers were measured on the model from before the city fix. Re-running costs
   about $0.02.
 - Warm-directory accuracy varies ±3 points between seeds.

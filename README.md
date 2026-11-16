@@ -16,19 +16,22 @@ recurring detector), with an LLM planned only as a fallback for low-confidence c
 
 | on merchants never seen in training | rules baseline | Ledgerlens |
 |---|---|---|
-| category accuracy | 53.5% | **81.2%** |
-| category macro-F1 | 0.583 | **0.672** |
-| accuracy, leak-free slice ([why](#leakage-check)) | 42.8% | **75.8%** |
+| category accuracy | 53.5% | **85.8%** |
+| category macro-F1 | 0.583 | **0.716** |
+| accuracy, leak-free slice ([why](#leakage-check)) | 42.8% | **83.2%** |
+| **independent benchmark**: a third party's 68K-row dataset, merchants never seen ([why](#independent-benchmark-someone-elses-data)) | 33.9% | **75.3%** (macro-F1 0.735; 39.2% before training on a second source) |
 | merchant name exactly right (all / known chains) | 46.8% / 50.1% | **87.5% / 94.3%** |
 | throughput (4 workers, M1 laptop) | – | **11.5K txns/s**, p95 38 ms per 100-txn batch |
-| bank statement formats never seen in training | – | **78.6%** category (vs 78.2% on seen formats) |
-| user corrections (unseen merchants) | – | **each fix repairs ~6 transactions**; 3 fixes: 81% → 94% |
-| hybrid with Claude Haiku 5.5 fallback (400 unseen txns) | – | **91.2% category / 82.2% merchant**, matching Haiku-only (91.5% / 83.8%) |
+| bank statement formats never seen in training¹ | – | **78.6%** category (vs 78.2% on seen formats) |
+| user corrections (unseen merchants)¹ | – | **each fix repairs ~6 transactions**; 3 fixes: 81% → 94% |
+| hybrid with Claude Haiku 5.5 fallback (400 unseen txns)¹ | – | **91.2% category / 82.2% merchant**, matching Haiku-only (91.5% / 83.8%) |
 | serving cost per 1M txns | – | ≈ $0.004 model only · **≈ $0.56–1.13 hybrid** (cached) · $26 Haiku-only |
 | small-request latency (pandas-free fast path) | – | **1.3 ms p50** for one transaction (7.8× faster), identical outputs |
 | Kubernetes chaos test in CI (pod deleted + pod force-killed under load) | – | **0 failed of 13,938 requests**; HPA scaled 3 → 8 replicas |
 
-Synthetic data, mean of 3 seeds. Real hand-labeled numbers: [in progress](#labeling-real-data).
+Mean of 3 seeds. Every dataset here is synthetic; the independent benchmark is someone else's synthetic
+data, which is the closest public substitute for real bank data (none with raw descriptors is public).
+¹ measured on the previous model (model-v2, trained on my data only).
 
 ## Quickstart
 
@@ -498,6 +501,45 @@ half of them, and the curve is steep partly because the tail is short. The commu
 synthetic population (the median unseen merchant is shared by 5 of 300 users); a real long tail is sparser. Simulated
 users are always right, so production community corrections would need agreement from several users, plus abuse
 protection, before applying to anyone else. Per-user corrections don't need that.
+
+## Independent benchmark: someone else's data
+
+Every number above used to come from data my own generator made, which is like writing the exam you
+grade yourself on. A model can look good just by learning that generator's habits. Real bank
+transactions with raw descriptors and labels aren't public, so the next best test is **someone
+else's** generator: [DoDataThings/us-bank-transaction-categories-v2](https://huggingface.co/datasets/DoDataThings/us-bank-transaction-categories-v2)
+(MIT, 68K rows, 500+ real merchant names, 8 US statement styles). The file is pinned by revision and
+SHA-256, and the category mapping was written before anything was scored
+([external_eval.py](ledgerlens/external_eval.py)).
+
+**It exposed a real generalization gap.** The model trained on my data alone scored **40.4%**, no
+better than the hand-written rules (41.1%). It had never seen `OVERDRAFT FEE`, `MTG PMT PENNYMAC`,
+`JBG SMITH RENT` or `CITGO #16776`. Its confidence was still informative, though: the 26% of rows it
+was ≥0.9 sure about were 82% right.
+
+**The fix: train on both sources, test on merchants neither has seen.** Their rows are matched to
+their generator's own merchant list (88% of rows, 894 merchants) and split by merchant, so every
+wrapper of a merchant (`PAYPAL INST XFER PLURALSIGHT`, `WITHDRAWAL FROM PLURALSIGHT`, ...) stays on
+one side. Tests check that no merchant crosses the split and that their test rows never reach a
+training file ([test_external.py](tests/test_external.py)). Results are on those withheld merchants:
+
+| | their held-out merchants (14,206 rows) | not in our directory (10,277) | my test split (whole merchants held out) |
+|---|---|---|---|
+| rules baseline | 33.9% | – | 53.5% |
+| model-v2 (my data only) | 39.2% | 30.6% | 81.2% |
+| **model-v3 (both sources)** | **75.3%** (F1 0.735) | **71.3%** | **85.8% ± 0.2** |
+
+More varied training data helped on **my** test set too, by 4.6 points. The first-seen merchant
+regime gained the most (73.1% → 81.5%).
+
+**A shortcut the sensitivity check caught.** Their data has no amounts, so the first retrain gave
+their rows a constant stand-in amount. The model learned "amount −42 means this source": accuracy
+moved 12 points when the test stand-in changed. Training rows now get random, label-independent
+amounts, and accuracy is flat across stand-ins (75.6% / 75.3% at ×0.25 / ×4).
+
+Reproduce: `python -m ledgerlens.external_eval --write-training data/synthetic/combined.csv`, then
+`python -m ledgerlens.train --data data/synthetic/combined.csv`, then
+`python -m ledgerlens.external_eval --heldout`.
 
 ## Week 6: scale-out (Redis, Kubernetes, observability)
 
