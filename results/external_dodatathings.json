@@ -1,0 +1,128 @@
+{
+  "slice": "held-out merchants (test split)",
+  "model_path": "model-v3: trained on our synthetic data + their train/val merchants",
+  "dataset": "https://huggingface.co/datasets/DoDataThings/us-bank-transaction-categories-v2/resolve/3e8d052cb7b362fb1a04b6064d2331982553ea56/transactions-synthetic.csv",
+  "sha256": "0424aed6e76f74a5b3b1ff61ccec43bc321622e6806da353b910b3b2c8108f6e",
+  "excluded_no_counterpart": {
+    "Insurance": 4000,
+    "Personal Care": 4000
+  },
+  "model": {
+    "rows": 14206,
+    "accuracy": 0.7534,
+    "macro_f1": 0.7349
+  },
+  "rules_baseline": {
+    "rows": 14206,
+    "accuracy": 0.3387,
+    "macro_f1": 0.4215
+  },
+  "by_confidence": [
+    {
+      "threshold": 0.0,
+      "kept_share": 1.0,
+      "accuracy_kept": 0.7534
+    },
+    {
+      "threshold": 0.5,
+      "kept_share": 0.8054,
+      "accuracy_kept": 0.8686
+    },
+    {
+      "threshold": 0.6,
+      "kept_share": 0.7665,
+      "accuracy_kept": 0.895
+    },
+    {
+      "threshold": 0.7,
+      "kept_share": 0.7293,
+      "accuracy_kept": 0.9079
+    },
+    {
+      "threshold": 0.8,
+      "kept_share": 0.6929,
+      "accuracy_kept": 0.9263
+    },
+    {
+      "threshold": 0.9,
+      "kept_share": 0.6101,
+      "accuracy_kept": 0.9476
+    }
+  ],
+  "merchant_not_in_our_directory": {
+    "rows": 10277,
+    "accuracy": 0.7127,
+    "macro_f1": 0.6848
+  },
+  "merchant_in_our_directory_share": 0.2766,
+  "per_class_accuracy": {
+    "Shopping": 0.441,
+    "Travel": 0.517,
+    "Healthcare": 0.544,
+    "Education": 0.566,
+    "Entertainment": 0.655,
+    "Groceries": 0.711,
+    "Transportation": 0.713,
+    "Subscription": 0.736,
+    "Transfer": 0.792,
+    "Restaurants": 0.809,
+    "Utilities": 0.852,
+    "Income": 0.909,
+    "Housing": 0.96,
+    "Fees": 1.0
+  },
+  "top_confusions": [
+    {
+      "truth": "Groceries",
+      "pred": "Shopping",
+      "rows": 215
+    },
+    {
+      "truth": "Healthcare",
+      "pred": "Shopping",
+      "rows": 192
+    },
+    {
+      "truth": "Groceries",
+      "pred": "Restaurants",
+      "rows": 166
+    },
+    {
+      "truth": "Education",
+      "pred": "Shopping",
+      "rows": 151
+    },
+    {
+      "truth": "Healthcare",
+      "pred": "Entertainment",
+      "rows": 137
+    },
+    {
+      "truth": "Education",
+      "pred": "Transportation",
+      "rows": 131
+    },
+    {
+      "truth": "Travel",
+      "pred": "Transportation",
+      "rows": 125
+    },
+    {
+      "truth": "Entertainment",
+      "pred": "Subscription",
+      "rows": 115
+    }
+  ],
+  "amount_sensitivity_6k_sample": {
+    "x0.25": {
+      "rows": 6000,
+      "accuracy": 0.756,
+      "macro_f1": 0.73
+    },
+    "x4.0": {
+      "rows": 6000,
+      "accuracy": 0.7528,
+      "macro_f1": 0.7352
+    }
+  }
+}

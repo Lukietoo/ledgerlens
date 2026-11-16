@@ -1,0 +1,128 @@
+{
+  "slice": "held-out merchants (test split)",
+  "model_path": "model-v2: trained on our synthetic data only",
+  "dataset": "https://huggingface.co/datasets/DoDataThings/us-bank-transaction-categories-v2/resolve/3e8d052cb7b362fb1a04b6064d2331982553ea56/transactions-synthetic.csv",
+  "sha256": "0424aed6e76f74a5b3b1ff61ccec43bc321622e6806da353b910b3b2c8108f6e",
+  "excluded_no_counterpart": {
+    "Insurance": 4000,
+    "Personal Care": 4000
+  },
+  "model": {
+    "rows": 14206,
+    "accuracy": 0.3917,
+    "macro_f1": 0.3837
+  },
+  "rules_baseline": {
+    "rows": 14206,
+    "accuracy": 0.3387,
+    "macro_f1": 0.4215
+  },
+  "by_confidence": [
+    {
+      "threshold": 0.0,
+      "kept_share": 1.0,
+      "accuracy_kept": 0.3917
+    },
+    {
+      "threshold": 0.5,
+      "kept_share": 0.6409,
+      "accuracy_kept": 0.5662
+    },
+    {
+      "threshold": 0.6,
+      "kept_share": 0.5429,
+      "accuracy_kept": 0.6365
+    },
+    {
+      "threshold": 0.7,
+      "kept_share": 0.4605,
+      "accuracy_kept": 0.696
+    },
+    {
+      "threshold": 0.8,
+      "kept_share": 0.3892,
+      "accuracy_kept": 0.7528
+    },
+    {
+      "threshold": 0.9,
+      "kept_share": 0.2733,
+      "accuracy_kept": 0.8199
+    }
+  ],
+  "merchant_not_in_our_directory": {
+    "rows": 10277,
+    "accuracy": 0.3058,
+    "macro_f1": 0.3146
+  },
+  "merchant_in_our_directory_share": 0.2766,
+  "per_class_accuracy": {
+    "Fees": 0.0,
+    "Housing": 0.022,
+    "Travel": 0.145,
+    "Transportation": 0.18,
+    "Subscription": 0.227,
+    "Entertainment": 0.33,
+    "Education": 0.376,
+    "Healthcare": 0.402,
+    "Transfer": 0.498,
+    "Shopping": 0.518,
+    "Utilities": 0.595,
+    "Restaurants": 0.688,
+    "Groceries": 0.775,
+    "Income": 0.795
+  },
+  "top_confusions": [
+    {
+      "truth": "Housing",
+      "pred": "Travel",
+      "rows": 690
+    },
+    {
+      "truth": "Fees",
+      "pred": "Groceries",
+      "rows": 431
+    },
+    {
+      "truth": "Fees",
+      "pred": "Restaurants",
+      "rows": 430
+    },
+    {
+      "truth": "Housing",
+      "pred": "Restaurants",
+      "rows": 409
+    },
+    {
+      "truth": "Entertainment",
+      "pred": "Shopping",
+      "rows": 329
+    },
+    {
+      "truth": "Transportation",
+      "pred": "Shopping",
+      "rows": 319
+    },
+    {
+      "truth": "Entertainment",
+      "pred": "Restaurants",
+      "rows": 318
+    },
+    {
+      "truth": "Education",
+      "pred": "Shopping",
+      "rows": 303
+    }
+  ],
+  "amount_sensitivity_6k_sample": {
+    "x0.25": {
+      "rows": 6000,
+      "accuracy": 0.4023,
+      "macro_f1": 0.4047
+    },
+    "x4.0": {
+      "rows": 6000,
+      "accuracy": 0.3888,
+      "macro_f1": 0.4048
+    }
+  }
+}

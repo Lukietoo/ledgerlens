@@ -16,3 +16,4 @@ models/
 build/
 dist/
 results/loadtest/
+data/external/
