@@ -4,6 +4,8 @@
 
 POST /v1/enrich                       batch of transactions -> merchant, category, confidence, recurring...
 GET  /healthz                         liveness + model metadata
+GET  /readyz                          readiness: model loaded and state store reachable
+GET  /metrics                         Prometheus metrics
 POST /v1/datasets                     upload a bank CSV (held in memory only) -> dataset_id
 POST /v1/datasets/demo                load a synthetic demo user
 GET  /v1/datasets/{id}/dashboard      totals, monthly by category, recurring, forecast
@@ -30,7 +32,9 @@ from fastapi import FastAPI, HTTPException, Query, Request, UploadFile
 from fastapi.concurrency import run_in_threadpool
 from pydantic import BaseModel, Field
 
+from ledgerlens import metrics
 from ledgerlens.agent import DEFAULT_AGENT_MODEL, FinanceAgent
+from ledgerlens.fastpath import is_eligible
 from ledgerlens.finance import Ledger
 from ledgerlens.guards import client_id
 from ledgerlens.state import MemoryDatasets, State, build_state
@@ -107,7 +111,27 @@ async def lifespan(app: FastAPI):
     yield
 
 
-app = FastAPI(title="Ledgerlens", version="0.4.0", lifespan=lifespan)
+app = FastAPI(title="Ledgerlens", version="0.5.0", lifespan=lifespan)
+app.middleware("http")(metrics.middleware)
+
+
+@app.get("/metrics", include_in_schema=False)
+def prometheus_metrics():
+    return metrics.exposition()
+
+
+@app.get("/readyz")
+def readyz(request: Request) -> dict:
+    """Readiness: the model is loaded and this replica can serve.
+
+    Deliberately NOT gated on Redis. Every replica shares one Redis, so gating on it would pull
+    all of them out of the load balancer at once and turn "saved statements are unavailable"
+    into a full outage, though /v1/enrich needs no shared state. Redis health is reported here
+    and on /healthz and alerted on instead.
+    """
+    if getattr(request.app.state, "enricher", None) is None:
+        raise HTTPException(503, "model not loaded")
+    return {"ready": True, "state_ok": request.app.state.store.ping()}
 
 
 @app.get("/healthz")
@@ -128,6 +152,7 @@ def enrich(req: EnrichRequest, request: Request) -> EnrichResponse:
     t0 = time.perf_counter()
     out = s.enricher.enrich_records(records)  # small requests: pandas-free fast path
     model_ms = (time.perf_counter() - t0) * 1000
+    metrics.ENRICHED.labels("fast" if is_eligible(len(records), ()) else "batch").inc(len(records))
 
     llm_ms, routed = 0.0, 0
     if req.llm_fallback and s.llm is not None and _within_budget(s):
@@ -138,7 +163,10 @@ def enrich(req: EnrichRequest, request: Request) -> EnrichResponse:
         out = apply_llm_fallback(pd.DataFrame(out), s.llm, RoutingPolicy(threshold=s.threshold)).to_dict("records")
         llm_ms = (time.perf_counter() - t1) * 1000
         routed = sum(r["source"] == "llm" for r in out)
-        s.budget.spend(s.llm.usage.cost_usd() - before)  # this path used to skip the daily cap
+        spent = s.llm.usage.cost_usd() - before
+        s.budget.spend(spent)  # this path used to skip the daily cap
+        metrics.LLM_SPEND.labels("enrich").inc(max(0.0, spent))
+        metrics.LLM_ROUTED.inc(routed)
     else:
         for r in out:
             r["source"] = "model"
@@ -171,7 +199,10 @@ def _enrich_ledger(s, raw: pd.DataFrame) -> Ledger:
     if s.llm is not None and _within_budget(s):
         before = s.llm.usage.cost_usd()
         out = apply_llm_fallback(out, s.llm, RoutingPolicy(threshold=s.threshold))
-        s.budget.spend(s.llm.usage.cost_usd() - before)
+        spent = s.llm.usage.cost_usd() - before
+        s.budget.spend(spent)
+        metrics.LLM_SPEND.labels("enrich").inc(max(0.0, spent))
+        metrics.LLM_ROUTED.inc(int((out["source"] == "llm").sum()))
     else:
         out["source"] = "model"
     return Ledger(pd.concat([out, raw[["date"]].reset_index(drop=True)], axis=1))
@@ -332,6 +363,7 @@ def chat(dataset_id: str, req: ChatRequest, request: Request) -> dict:
         log.warning("agent API error %s (request id %s)", e.status_code, getattr(e, "request_id", None))
         raise HTTPException(502, f"model provider error ({e.status_code})") from e
     s.budget.spend(r.cost_usd())
+    metrics.LLM_SPEND.labels("agent").inc(max(0.0, r.cost_usd()))
     return {"reply": r.reply, "stop_reason": r.stop_reason, "model": r.model,
             "trace": [t.__dict__ for t in r.trace], "seconds": r.seconds,
             "usage": {"input_tokens": r.input_tokens, "output_tokens": r.output_tokens,
@@ -364,4 +396,5 @@ def correct(dataset_id: str, req: CorrectionRequest, request: Request) -> dict:
         n = request.app.state.datasets.correct(dataset_id, req.merchant_key, merchant=merchant, category=req.category)
     except KeyError as e:
         raise HTTPException(404, "no transactions with that merchant key in this dataset") from e
+    metrics.CORRECTIONS.inc()
     return {"updated": n, "merchant_key": req.merchant_key, "merchant": req.merchant, "category": req.category}
