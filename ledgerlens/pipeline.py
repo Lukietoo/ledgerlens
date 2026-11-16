@@ -102,6 +102,18 @@ class Enricher:
         a = joblib.load(path)
         return cls(a["text_model"], a["lgbm"], a["columns"], a["tau"], Resolver(a["resolver_entries"]))
 
+    def enrich_records(self, records: list[dict], exclude: Collection[str] = ()) -> list[dict]:
+        """Records in, records out. Small requests (the usual API call) take the pandas-free fast
+        path (fastpath.py: identical outputs, ~8x lower latency); larger batches use enrich()."""
+        from ledgerlens import fastpath
+
+        if fastpath.is_eligible(len(records), exclude):
+            return fastpath.enrich_records(self, records)
+        out = self.enrich(pd.DataFrame(records), exclude=exclude).to_dict("records")
+        for r in out:  # per record: assigning None back into an all-NaN column re-coerces it to NaN
+            r["processor"] = r["processor"] if isinstance(r["processor"], str) else None
+        return out
+
     def enrich(self, df: pd.DataFrame, exclude: Collection[str] = ()) -> pd.DataFrame:
         """``exclude`` hides merchants from the directory (evaluation only: simulates cold start)."""
         df = df.reset_index(drop=True).copy()

@@ -119,9 +119,10 @@ def healthz(request: Request) -> dict:
 def enrich(req: EnrichRequest, request: Request) -> EnrichResponse:
     # sync handler: FastAPI runs it in a threadpool, so CPU work doesn't block the event loop
     s = request.app.state
-    df = pd.DataFrame([t.model_dump() for t in req.transactions])
+    records = [{"description": t.description, "amount": t.amount, "date": t.date, "user_id": t.user_id}
+               for t in req.transactions]
     t0 = time.perf_counter()
-    out = s.enricher.enrich(df[["description", "amount", "date", "user_id"]])
+    out = s.enricher.enrich_records(records)  # small requests: pandas-free fast path
     model_ms = (time.perf_counter() - t0) * 1000
 
     llm_ms, routed = 0.0, 0
@@ -129,18 +130,19 @@ def enrich(req: EnrichRequest, request: Request) -> EnrichResponse:
         t1 = time.perf_counter()
         # names-only policy won the eval (results/week3_llm_*.md): route low-confidence rows AND rows
         # whose merchant isn't in the directory; take the LLM's category only on low-confidence rows.
-        out = apply_llm_fallback(out, s.llm, RoutingPolicy(threshold=s.threshold))
+        out = apply_llm_fallback(pd.DataFrame(out), s.llm, RoutingPolicy(threshold=s.threshold)).to_dict("records")
         llm_ms = (time.perf_counter() - t1) * 1000
-        routed = int((out["source"] == "llm").sum())
+        routed = sum(r["source"] == "llm" for r in out)
     else:
-        out["source"] = "model"
+        for r in out:
+            r["source"] = "model"
 
     results = [
-        TxnOut(id=i, merchant=r.merchant, merchant_in_directory=bool(r.merchant_in_directory), category=r.category,
-               confidence=float(r.confidence), is_recurring=bool(r.is_recurring),
-               processor=r.processor if isinstance(r.processor, str) else None, source=r.source)
-        # ids from the request, not the DataFrame: a mix of present/absent ids becomes NaN in pandas
-        for i, r in zip((t.id for t in req.transactions), out.itertuples(index=False))
+        TxnOut(id=i, merchant=r["merchant"], merchant_in_directory=bool(r["merchant_in_directory"]),
+               category=r["category"], confidence=float(r["confidence"]), is_recurring=bool(r["is_recurring"]),
+               processor=r["processor"] if isinstance(r["processor"], str) else None, source=r["source"])
+        # ids from the request: a mix of present/absent ids would become NaN in pandas
+        for i, r in zip((t.id for t in req.transactions), out)
     ]
     return EnrichResponse(results=results, model_ms=round(model_ms, 2), llm_ms=round(llm_ms, 2), llm_routed=routed)
 
