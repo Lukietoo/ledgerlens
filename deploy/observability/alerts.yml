@@ -1,0 +1,23 @@
+groups:
+  - name: ledgerlens
+    rules:
+      - alert: LedgerlensHighErrorRate
+        expr: |
+          sum(rate(ledgerlens_http_requests_total{status=~"5.."}[5m]))
+            / clamp_min(sum(rate(ledgerlens_http_requests_total[5m])), 1e-9) > 0.01
+        for: 5m
+        labels: {severity: page}
+        annotations:
+          summary: "More than 1% of API requests are failing"
+      - alert: LedgerlensSlowEnrich
+        expr: |
+          histogram_quantile(0.99, sum by (le) (rate(ledgerlens_http_request_duration_seconds_bucket{route="/v1/enrich"}[5m]))) > 0.25
+        for: 10m
+        labels: {severity: ticket}
+        annotations:
+          summary: "p99 /v1/enrich latency above 250 ms"
+      - alert: LedgerlensLLMSpendHigh
+        expr: sum(increase(ledgerlens_llm_spend_usd_total[1h])) > 0.5
+        labels: {severity: ticket}
+        annotations:
+          summary: "LLM spend above $0.50 in the last hour (daily cap is enforced in the API)"

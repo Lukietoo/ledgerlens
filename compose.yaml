@@ -1,0 +1,77 @@
+# Full stack on one machine: API (4 workers sharing Redis), dashboard, Prometheus, Grafana.
+#
+#   docker compose up --build
+#   open http://localhost:3000   dashboard
+#        http://localhost:3001   Grafana (dashboard "Ledgerlens API"; anonymous read-only)
+#        http://localhost:9090   Prometheus
+#
+# Every port binds to 127.0.0.1 only. ANTHROPIC_API_KEY is passed through from your shell if set
+# (chat + LLM fallback); nothing secret lives in this file.
+name: ledgerlens
+
+services:
+  redis:
+    image: redis:7.4-alpine
+    # cache-only: no disk persistence; evict only keys that have a TTL (statements, rate limits)
+    command: ["redis-server", "--save", "", "--appendonly", "no", "--maxmemory", "256mb",
+              "--maxmemory-policy", "volatile-lru"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 2s
+      retries: 10
+
+  api:
+    build: .
+    image: ledgerlens-api:dev
+    environment:
+      LEDGERLENS_REDIS_URL: redis://redis:6379/0
+      WEB_CONCURRENCY: "4"
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      LEDGERLENS_LLM: ${LEDGERLENS_LLM:-0}
+      LEDGERLENS_DAILY_LLM_BUDGET_USD: "2.00"
+    depends_on:
+      redis: {condition: service_healthy}
+    ports: ["127.0.0.1:8000:8000"]
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/readyz', timeout=2)"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  web:
+    build: ./web
+    image: ledgerlens-web:dev
+    environment:
+      LEDGERLENS_API: http://api:8000
+    depends_on:
+      api: {condition: service_healthy}
+    ports: ["127.0.0.1:3000:3000"]
+    read_only: true
+    tmpfs: [/tmp, /app/.next/cache]
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+
+  prometheus:
+    image: prom/prometheus:v3.5.0
+    volumes:
+      - ./deploy/observability/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./deploy/observability/alerts.yml:/etc/prometheus/alerts.yml:ro
+    ports: ["127.0.0.1:9090:9090"]
+
+  grafana:
+    image: grafana/grafana:12.1.0
+    environment:
+      PROMETHEUS_URL: http://prometheus:9090
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
+      GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /var/lib/grafana/dashboards/ledgerlens.json
+    volumes:
+      - ./deploy/observability/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./deploy/observability/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    ports: ["127.0.0.1:3001:3000"]
+    depends_on: [prometheus]
