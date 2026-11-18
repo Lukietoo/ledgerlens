@@ -87,7 +87,7 @@ def test_format_rows_split_card_and_ach():
 
 
 def _two_users():
-    wf = [(f"u1", line) for line in _statement()]
+    wf = [("u1", line) for line in _statement()]
     plain = [("u2", f"SHOP{a}{b} PLACE OAKLAND CA") for a in "LMNOP" for b in "QRSTU"]
     return pd.DataFrame(wf + plain, columns=["user_id", "description"])
 

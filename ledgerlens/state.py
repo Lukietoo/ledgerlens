@@ -34,7 +34,7 @@ import uuid
 from collections import OrderedDict
 from collections.abc import MutableMapping
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 import pandas as pd
@@ -241,7 +241,7 @@ class RedisRateLimiter:
 class RedisDailyBudget:
     """Same contract as guards.DailyBudget, shared by all workers. Fails CLOSED if Redis is down."""
 
-    def __init__(self, r, usd_per_day: float, today=lambda: datetime.now(timezone.utc).date()):
+    def __init__(self, r, usd_per_day: float, today=lambda: datetime.now(UTC).date()):
         self.r, self.limit, self.today = r, usd_per_day, today
 
     def _k(self) -> str:

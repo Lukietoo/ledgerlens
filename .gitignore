@@ -17,3 +17,8 @@ build/
 dist/
 results/loadtest/
 data/external/
+
+# local coverage data (contains absolute paths)
+.coverage
+.coverage.*
+htmlcov/

@@ -24,10 +24,26 @@ import pandas as pd
 from sklearn.metrics import accuracy_score, f1_score
 
 from ledgerlens import baseline
-from ledgerlens.features import (AMOUNT, HISTORY, HISTORY_MISSING, RULES, STRUCT, add_clean,
-                                 history_features, struct_amount_features)
-from ledgerlens.model import (RESOLVER, TEXT, ResolverFeaturizer, as_categoricals, fit_lgbm,
-                              fit_text_model, oof_stack_features, text_proba)
+from ledgerlens.features import (
+    AMOUNT,
+    HISTORY,
+    HISTORY_MISSING,
+    RULES,
+    STRUCT,
+    add_clean,
+    history_features,
+    struct_amount_features,
+)
+from ledgerlens.model import (
+    RESOLVER,
+    TEXT,
+    ResolverFeaturizer,
+    as_categoricals,
+    fit_lgbm,
+    fit_text_model,
+    oof_stack_features,
+    text_proba,
+)
 from ledgerlens.normalize import canon, normalize
 from ledgerlens.resolver import Resolver
 from ledgerlens.taxonomy import CATEGORIES

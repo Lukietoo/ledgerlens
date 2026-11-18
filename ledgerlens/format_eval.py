@@ -35,8 +35,16 @@ from sklearn.metrics import accuracy_score
 from ledgerlens import baseline
 from ledgerlens.boilerplate import learn_boilerplate
 from ledgerlens.features import HISTORY_MISSING, add_clean, history_features, struct_amount_features
-from ledgerlens.model import (RESOLVER, TEXT, ResolverFeaturizer, as_categoricals, fit_lgbm,
-                              fit_text_model, oof_stack_features, text_proba)
+from ledgerlens.model import (
+    RESOLVER,
+    TEXT,
+    ResolverFeaturizer,
+    as_categoricals,
+    fit_lgbm,
+    fit_text_model,
+    oof_stack_features,
+    text_proba,
+)
 from ledgerlens.normalize import FORMAT_RULES, canon, disabled_rules
 from ledgerlens.resolver import Resolver
 from ledgerlens.synth import EMPLOYERS, PAYROLL_PROCESSORS, load_chain_merchants

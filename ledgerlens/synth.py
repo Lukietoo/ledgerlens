@@ -503,8 +503,8 @@ class Simulator:
             ms = _month_start(i)
             dim = _days_in_month(ms)
 
-            def rand_day() -> date:
-                return ms + timedelta(days=rng.randrange(dim))
+            def rand_day() -> date:  # called within this iteration only, so the late binding is safe
+                return ms + timedelta(days=rng.randrange(dim))  # noqa: B023
 
             for m, dom, amt, jitter in recurring:
                 d = ms.replace(day=min(dom, dim))

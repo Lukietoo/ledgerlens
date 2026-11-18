@@ -18,9 +18,11 @@ jobs:
           python-version: "3.13"
           cache: pip
       - run: pip install -e '.[dev]'
+      - run: ruff check .
       # tests build their own small synthetic datasets and models, and use a fake
-      # Anthropic client: no API key, no network, no cost
-      - run: pytest -q
+      # Anthropic client: no API key, no network, no cost. Coverage is of the library;
+      # the eval CLIs (paid API calls, downloaded data) are excluded in pyproject.toml.
+      - run: pytest -q --cov --cov-report=term --cov-fail-under=85
 
   web:
     runs-on: ubuntu-latest

@@ -9,7 +9,7 @@ from __future__ import annotations
 import threading
 import time
 from collections import defaultdict, deque
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from fastapi import HTTPException, Request
 
@@ -49,7 +49,7 @@ class RateLimiter:
 class DailyBudget:
     """Caps LLM spend per UTC day. ``check`` before a paid call, ``spend`` after it."""
 
-    def __init__(self, usd_per_day: float, today=lambda: datetime.now(timezone.utc).date()):
+    def __init__(self, usd_per_day: float, today=lambda: datetime.now(UTC).date()):
         self.limit, self.today = usd_per_day, today
         self._day, self._spent = today(), 0.0
         self._lock = threading.Lock()
