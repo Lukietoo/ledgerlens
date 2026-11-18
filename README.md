@@ -12,13 +12,13 @@ build budgeting, underwriting, or fraud features on top. Ledgerlens is a
 classic-ML pipeline (normalizer → merchant resolver → stacked category model →
 recurring detector), with an LLM planned only as a fallback for low-confidence cases.
 
-**Status:** all 6 weeks built; week 6 made it [scale out on Kubernetes](#week-6-scale-out-redis-kubernetes-observability). The writeup is [docs/WRITEUP.md](docs/WRITEUP.md); the demo script is [docs/DEMO.md](docs/DEMO.md).
+**Status:** all 6 weeks built; week 6 made it [scale out on Kubernetes](#week-6-scale-out-redis-kubernetes-observability). The writeup is [docs/WRITEUP.md](docs/WRITEUP.md), the model card is [docs/MODEL_CARD.md](docs/MODEL_CARD.md), and the demo script is [docs/DEMO.md](docs/DEMO.md).
 
 | on merchants never seen in training | rules baseline | Ledgerlens |
 |---|---|---|
-| category accuracy | 53.5% | **85.8%** |
-| category macro-F1 | 0.583 | **0.716** |
-| accuracy, leak-free slice ([why](#leakage-check)) | 42.8% | **83.2%** |
+| category accuracy | 53.5% | **84.4%** (87.5% with the full merchant directory) |
+| category macro-F1 | 0.583 | **0.699** |
+| accuracy, leak-free slice ([why](#leakage-check)) | 42.8% | **81.6%** |
 | **independent benchmark**: a third party's 68K-row dataset, merchants never seen ([why](#independent-benchmark-someone-elses-data)) | 33.9% | **75.3%** (macro-F1 0.735; 39.2% before training on a second source) |
 | independent benchmark, **model + Claude Haiku 5.5 fallback** (1,988 rows, equal per category) | – | **90.3%** (macro-F1 0.910), up from 73.8% model-only; $0.027 measured |
 | merchant name exactly right (all / known chains) | 46.8% / 50.1% | **87.5% / 94.3%** |
@@ -55,7 +55,7 @@ Enricher.load().enrich(df)   # df: description, amount, date[, user_id]
 LEDGERLENS_LLM=1 .venv/bin/uvicorn ledgerlens.service:app     # + LLM fallback (needs Anthropic credentials)
 
 curl -s localhost:8000/v1/enrich -H 'content-type: application/json' -d '{"transactions": [
-  {"description": "PURCHASE AUTHORIZED ON 03/14 SQ *BLUE BTL COF OAKLAND CA S38207461 CARD 4821",
+  {"description": "PURCHASE AUTHORIZED ON 03/14 SQ *BLUE BOTTLE COF OAKLAND CA S38207461 CARD 4821",
    "amount": -6.50, "date": "2026-03-14"}]}'
 ```
 
@@ -171,18 +171,22 @@ merchants are also hidden from the directory, so LightGBM learns how much to tru
 | model (test split, unseen merchants) | accuracy | macro-F1 | leak-free acc | local merchants |
 |---|---|---|---|---|
 | Rules baseline (week 1) | 53.5% | 0.583 | 42.8% | 44.2% |
-| TF-IDF + logistic regression | 46.0% | 0.366 | 51.7% | 71.2% |
-| LightGBM: text + format + amount | 51.8% ± 0.4 | 0.396 | 58.2% | 80.4% |
-| + user history | 61.3% ± 0.7 | 0.458 | 65.7% | 88.4% |
-| **+ rules prediction as a feature** | **81.2% ± 0.3** | **0.672** | **75.8%** | 90.9% |
-| + merchant resolver (full model) | 80.5% ± 0.9 | 0.659 | 74.9% | 89.4% |
-| full model, first-seen txn (no history) | 73.1% ± 0.2 | 0.630 | 65.9% | 79.4% |
+| TF-IDF + logistic regression | 65.4% | 0.552 | 73.7% | 70.0% |
+| LightGBM: text + format + amount | 67.4% ± 0.2 | 0.578 | 74.4% | 77.9% |
+| + user history | 77.3% ± 2.6 | 0.647 | 81.2% | 90.1% |
+| + rules prediction as a feature | 85.8% ± 0.2 | 0.716 | 83.2% | 89.8% |
+| **+ merchant resolver (full model, shipped)** | **84.4% ± 0.2** | **0.699** | **81.6%** | 88.3% |
+| full model, first-seen txn (no history) | 81.5% ± 0.2 | 0.683 | 78.6% | 79.2% |
 
-With the full merchant directory available (production setting), the full model reaches **86.7% ± 3.2**.
+Model-v3, trained on my synthetic data plus the third-party benchmark's training merchants (see
+[Independent benchmark](#independent-benchmark-someone-elses-data)); the test split is my own.
+
+With the full merchant directory available (production setting), the full model reaches **87.5% ± 0.6**.
 Merchant resolution goes from **46.8% → 83.5%** exact match overall (**94.1%** on known chains); with the Week 5
 boilerplate learner, **87.5%** (94.3%).
-**In the cold regime the resolver is neutral** (80.5% ± 0.9 vs 81.2% ± 0.3 without it, within noise): it can't match
-a merchant the directory doesn't have. It earns its place in the warm regime and in merchant names.
+**In the cold regime the resolver costs 1.4 points** (84.4% ± 0.2 vs 85.8% ± 0.2 without it): it
+can't match a merchant the directory doesn't have, and a near-miss match can mislead. It earns its place in the warm
+regime (87.5%) and in merchant names, so the shipped model keeps it and the headline reports the shipped model.
 Inference takes about 25 ms for a small batch on a laptop (see the Week 3 load test).
 
 ### What I learned (the parts worth talking about)
@@ -324,7 +328,7 @@ cd web && npm install && npm run dev                      # dashboard on :3000, 
 
 **Dashboard** ([web/](web/src/app/page.tsx), Next.js 15 + Tailwind + Recharts). Upload a bank CSV or load a
 demo account (one synthetic user, 12 months, deterministic so the demo video is reproducible). It shows:
-- a hero that decodes a real line from the statement (`SQ *BLUE BTL COF` → Blue Bottle Coffee),
+- a hero that decodes a real line from the statement (`AMZN MKTP US*2K4AB1CD2` → Amazon),
 - spending by month, stacked by category,
 - the transaction feed: the bank's raw text under each clean merchant, an amber "Claude" tag where the LLM
   named it, and an "unsure" tag below the confidence threshold,
@@ -528,10 +532,10 @@ training file ([test_external.py](tests/test_external.py)). Results are on those
 | | their held-out merchants (14,206 rows) | not in our directory (10,277) | my test split (whole merchants held out) |
 |---|---|---|---|
 | rules baseline | 33.9% | – | 53.5% |
-| model-v2 (my data only) | 39.2% | 30.6% | 81.2% |
-| **model-v3 (both sources)** | **75.3%** (F1 0.735) | **71.3%** | **85.8% ± 0.2** |
+| model-v2 (my data only) | 39.2% | 30.6% | 80.5% ± 0.9 |
+| **model-v3 (both sources)** | **75.3%** (F1 0.735) | **71.3%** | **84.4% ± 0.2** |
 
-More varied training data helped on **my** test set too, by 4.6 points. The first-seen merchant
+More varied training data helped on **my** test set too, by 3.9 points. The first-seen merchant
 regime gained the most (73.1% → 81.5%).
 
 **A shortcut the sensitivity check caught.** Their data has no amounts, so the first retrain gave
@@ -552,6 +556,13 @@ equal count per category:
 77% of these rows were routed, in 35 requests, for a measured **$0.027** ($0.014 per 1K
 transactions). That routing share is far above the production mix because every merchant here is
 new, which is the case the fallback exists for. Results: [external_hybrid.md](results/external_hybrid.md).
+
+**Why it misses, and whether to trust its confidence.** I read 60 random misses and sorted each
+by cause ([error analysis](results/external_errors.md)). 43% are brand names with no clue in the
+text (`MITSUWA`, `CEREBRAL`), which is the fallback's job; 22% are cases where both labels are
+defensible (airport parking: Travel or Transportation?), so no model can score 100% here.
+Calibration error is 0.053: rows at 0.9+ confidence are right 94.8% of the time, against a stated
+0.98, so the model is mildly overconfident and the routing threshold comes from measured accuracy.
 
 Reproduce: `python -m ledgerlens.external_eval --write-training data/synthetic/combined.csv`, then
 `python -m ledgerlens.train --data data/synthetic/combined.csv`, then
@@ -662,7 +673,7 @@ This is the number founders will ask about.
    `m` to edit the merchant, `s` to skip, `u` to undo, `?` for help, `q` to save and quit. You can resume anytime.
 3. Aim for **1–2K unique descriptions**. Then run `.venv/bin/python -m ledgerlens.evaluate --real data/real/labeled.csv`,
    which reports the rules baseline and the trained model side by side. Rows are unique descriptions, so this is the
-   first-seen regime (expect it to look like the 73% row, not the 81% one).
+   first-seen regime (expect it to look like the 81.5% first-seen row, not the 84.4% one).
 
 `data/real/` is gitignored, so your bank data stays on your machine.
 
@@ -678,4 +689,5 @@ This is the number founders will ask about.
 - [x] Boilerplate learner on in production for merchant names (category unaffected by design; see the gate above)
 - [x] User corrections: fix once, applied to every transaction from that merchant; review list; measured lift ([results](results/week5_corrections.md))
 - [x] **Week 6**: pandas-free fast path, Redis shared state, Prometheus/Grafana, Docker, Kubernetes with a chaos test in CI
+- [x] Error analysis + calibration on the independent benchmark; [model card](docs/MODEL_CARD.md); ruff + 85% coverage gate in CI
 - [ ] Hand-labeled real-data eval (`scripts/label.py`) and re-run of the LLM fallback eval on the fixed model

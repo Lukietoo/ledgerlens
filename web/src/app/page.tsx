@@ -9,14 +9,15 @@ import { SpendingChart } from "@/components/SpendingChart";
 import { TransactionFeed } from "@/components/TransactionFeed";
 import { api, usd, type Dashboard, type DatasetInfo, type Txn } from "@/lib/api";
 
-// Shown before anything is loaded: real-looking lines from the synthetic generator's noise model.
+// Shown before anything is loaded: real-looking lines from the synthetic generator's noise model,
+// with what the shipped model (model-v3, no LLM) actually returns for each.
 const SAMPLE: Txn[] = [
-  { description: "PURCHASE AUTHORIZED ON 03/14 SQ *BLUE BTL COF OAKLAND CA S382074619283746 CARD 4821", merchant: "Blue Bottle Coffee", category: "COFFEE" },
+  { description: "PURCHASE AUTHORIZED ON 03/14 SQ *BLUE BOTTLE COF OAKLAND CA S382074619283746 CARD 4821", merchant: "Blue Bottle Coffee", category: "COFFEE" },
   { description: "CHECKCARD 0412 AMZN MKTP US*2K4AB1CD2 AMZN.COM/BILL WA 30196686274025326268433", merchant: "Amazon", category: "SHOPPING" },
   { description: "ZILLOW RENT DES:RENT ID:63YY09OPN INDN:ANDREW ANDERSON CO ID:2369560690 WEB", merchant: "Zillow Rent", category: "HOUSING" },
-  { description: "TST* GOLDEN FOX TAQUERIA BERKELEY CA", merchant: "Golden Fox Taqueria", category: "DINING" },
-].map((t) => ({ ...t, date: "", amount: 0, confidence: 1, source: "model", merchant_in_directory: true,
-  is_recurring: false, merchant_key: "" }));
+  { description: "TST* GOLDEN FOX TAQUERIA BERKELEY CA", merchant: "Golden Fox Taqueria", category: "DINING", merchant_in_directory: false },
+].map((t) => ({ date: "", amount: 0, confidence: 1, source: "model", merchant_in_directory: true,
+  is_recurring: false, merchant_key: "", ...t }));
 
 export default function Home() {
   const [info, setInfo] = useState<DatasetInfo | null>(null);
@@ -95,7 +96,7 @@ export default function Home() {
           </p>
         ) : (
           <p className="mt-6 max-w-xl text-ink-soft">
-            Bank statements say <span className="raw text-ink">SQ *BLUE BTL COF</span>. Ledgerlens works out who you paid,
+            Bank statements say <span className="raw text-ink">AMZN MKTP US*2K4AB1CD2</span>. Ledgerlens works out who you paid,
             what kind of spending it was, and which charges come back every month. Then you can ask it questions.
             Your statement stays in memory on the server and is never saved.
           </p>

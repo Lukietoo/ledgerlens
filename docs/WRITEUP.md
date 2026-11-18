@@ -47,9 +47,9 @@ measure memorization.
 
 | | rules baseline | Ledgerlens |
 |---|---|---|
-| category accuracy | 53.5% | **85.8%** |
-| macro-F1 | 0.583 | **0.716** |
-| accuracy, leak-free slice | 42.8% | **83.2%** |
+| category accuracy | 53.5% | **84.4%** |
+| macro-F1 | 0.583 | **0.699** |
+| accuracy, leak-free slice | 42.8% | **81.6%** |
 | independent benchmark (a third party's data, merchants never seen) | 33.9% | **75.3%** |
 | same benchmark, model + Claude Haiku 5.5 fallback (1,988-row sample) | – | **90.3%** (73.8% model-only on that sample) |
 | bank formats never seen in training | – | **78.6%** (vs 78.2% seen) |
@@ -76,7 +76,7 @@ auto-graded eval at **$0.0008 per question**.
 - **My own data was flattering me.** On a third party's dataset (68K rows, someone else's generator),
   the model trained only on my data scored 40%, no better than hand-written rules. It had learned
   my generator's vocabulary, not banking's. Training on both sources, with whole merchants held out,
-  took it to 75% on merchants neither source had shown it, and to 86% on my own test set (from 81%).
+  took it to 75% on merchants neither source had shown it, and to 84% on my own test set (from 80.5%).
   The retrain also found a shortcut: a constant stand-in amount let the model tell the two sources
   apart, until the training amounts were randomized.
 
