@@ -1,6 +1,6 @@
 {
   "slice": "held-out merchants (test split)",
-  "model_path": "model-v3: trained on our synthetic data + their train/val merchants",
+  "model_path": "models/enricher.joblib",
   "dataset": "https://huggingface.co/datasets/DoDataThings/us-bank-transaction-categories-v2/resolve/3e8d052cb7b362fb1a04b6064d2331982553ea56/transactions-synthetic.csv",
   "sha256": "0424aed6e76f74a5b3b1ff61ccec43bc321622e6806da353b910b3b2c8108f6e",
   "excluded_no_counterpart": {
@@ -49,6 +49,65 @@
       "accuracy_kept": 0.9476
     }
   ],
+  "calibration": {
+    "ece": 0.0527,
+    "bins": [
+      {
+        "bin": "0.1\u20130.2",
+        "rows": 183,
+        "mean_confidence": 0.17,
+        "accuracy": 0.098
+      },
+      {
+        "bin": "0.2\u20130.3",
+        "rows": 902,
+        "mean_confidence": 0.257,
+        "accuracy": 0.165
+      },
+      {
+        "bin": "0.3\u20130.4",
+        "rows": 847,
+        "mean_confidence": 0.349,
+        "accuracy": 0.266
+      },
+      {
+        "bin": "0.4\u20130.5",
+        "rows": 832,
+        "mean_confidence": 0.452,
+        "accuracy": 0.448
+      },
+      {
+        "bin": "0.5\u20130.6",
+        "rows": 553,
+        "mean_confidence": 0.551,
+        "accuracy": 0.347
+      },
+      {
+        "bin": "0.6\u20130.7",
+        "rows": 528,
+        "mean_confidence": 0.642,
+        "accuracy": 0.642
+      },
+      {
+        "bin": "0.7\u20130.8",
+        "rows": 518,
+        "mean_confidence": 0.757,
+        "accuracy": 0.558
+      },
+      {
+        "bin": "0.8\u20130.9",
+        "rows": 1176,
+        "mean_confidence": 0.857,
+        "accuracy": 0.77
+      },
+      {
+        "bin": "0.9\u20131.0",
+        "rows": 8667,
+        "mean_confidence": 0.978,
+        "accuracy": 0.948
+      }
+    ]
+  },
   "merchant_not_in_our_directory": {
     "rows": 10277,
     "accuracy": 0.7127,

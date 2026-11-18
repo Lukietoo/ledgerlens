@@ -185,6 +185,24 @@ def metrics(d: pd.DataFrame, col: str = "pred") -> dict:
                                              zero_division=0)), 4)}
 
 
+def calibration(d: pd.DataFrame, bins: int = 10) -> dict:
+    """Does a stated confidence of p mean right about p of the time? Expected calibration error
+    (ECE) is the row-weighted gap between confidence and accuracy over equal-width bins."""
+    ok = (d["truth"] == d["pred"]).to_numpy()
+    conf = d["confidence"].to_numpy(dtype=float)
+    idx = np.minimum((conf * bins).astype(int), bins - 1)
+    rows, ece = [], 0.0
+    for b in range(bins):
+        m = idx == b
+        if not m.any():
+            continue
+        acc, mean_conf = float(ok[m].mean()), float(conf[m].mean())
+        ece += m.mean() * abs(acc - mean_conf)
+        rows.append({"bin": f"{b / bins:.1f}–{(b + 1) / bins:.1f}", "rows": int(m.sum()),
+                     "mean_confidence": round(mean_conf, 3), "accuracy": round(acc, 3)})
+    return {"ece": round(float(ece), 4), "bins": rows}
+
+
 def by_confidence(d: pd.DataFrame) -> list[dict]:
     """If rows under a confidence cutoff went to a fallback, how good is what the model keeps?"""
     out = []
@@ -238,6 +256,7 @@ def main() -> None:
         "model_path": str(args.model), "dataset": URL, "sha256": SHA256, "excluded_no_counterpart": dict(excluded),
         "model": metrics(scored), "rules_baseline": metrics(scored, "baseline"),
         "by_confidence": by_confidence(scored),
+        "calibration": calibration(scored),
         "merchant_not_in_our_directory": metrics(cold) if len(cold) else None,
         "merchant_in_our_directory_share": round(float(scored["in_directory"].mean()), 4),
         "per_class_accuracy": per_class,
@@ -274,8 +293,15 @@ def to_markdown(r: dict) -> str:
           + "; ".join(f"{x['truth']} → {x['pred']} ({x['rows']:,})" for x in r["top_confusions"][:5]) + ".", "",
           "If low-confidence rows went to a fallback, what the model keeps: "
           + "; ".join(f"≥{x['threshold']:.1f}: {x['kept_share']:.0%} of rows at {x['accuracy_kept']:.1%}"
-                      for x in r["by_confidence"][1:]) + ".", "",
-          "Stand-in amount ×0.25 / ×4 on a 6K sample: "
+                      for x in r["by_confidence"][1:]) + ".", ""]
+    if "calibration" in r:
+        cal = r["calibration"]
+        L += [f"Calibration: expected calibration error **{cal['ece']:.3f}** (0 = stated confidence matches "
+              "accuracy exactly).", "", "| confidence | rows | mean confidence | accuracy |", "|---|---|---|---|"]
+        L += [f"| {b['bin']} | {b['rows']:,} | {b['mean_confidence']:.2f} | {b['accuracy']:.1%} |"
+              for b in cal["bins"]]
+        L += [""]
+    L += ["Stand-in amount ×0.25 / ×4 on a 6K sample: "
           + " / ".join(f"{v['accuracy']:.1%}" for v in r["amount_sensitivity_6k_sample"].values()) + ".", ""]
     return "\n".join(L)
 
